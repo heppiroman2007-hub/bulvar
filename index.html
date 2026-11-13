@@ -324,7 +324,15 @@ const IDLE = i => `vid/${D}_idle_${i}.mp4`, FLY = i => `vid/${D}_fly_${i}.mp4`;
 document.documentElement.style.setProperty("--poster", `url(${IDLE(0).replace(".mp4", ".jpg")})`);
 const RATE = 1;          // пролёт с родной скоростью (2x Роману — «резко, тошнит»)
 const FLY_START = 0;
-const STOPS = [{sign:0, intro:true}, {sign:2}, {sign:4}, {sign:6}, {final:true}];
+// остановки: idle:k — пауза k (живая петля); fly:k + t — стоп-кадр среднего щита внутри пролёта k (кадр подобран find_midstop.py)
+const MID_T = MOB ? 5.0 : 4.25;
+const STOPS = [
+  {sign:0, idle:0, intro:true}, {sign:1, fly:0, t:MID_T},
+  {sign:2, idle:1},             {sign:3, fly:1, t:MID_T},
+  {sign:4, idle:2},             {sign:5, fly:2, t:MID_T},
+  {sign:6, idle:3},
+  {final:true, idle:4}           // пролёт 3 — мимо щита «Здесь может быть ваш сайт» без остановки
+];
 const vA = $("vA"), vB = $("vB"), pin = $("pin");
 let act = vA, idle = vB, si = 0, busy = false, busyLine = "";
 const intro = $("intro"), capt = $("capt"), fin = $("final"), nextB = $("next"), dots = $("dots");
@@ -359,10 +367,23 @@ async function crossTo(src, loop, rate, start = 0){
 }
 // пауза у щита k — зацикленный ролик, люди шевелятся
 const showIdle = k => crossTo(IDLE(k), true, 1);
-// пролёт от щита k к следующему; под конец — наплыв в паузу следующего щита
-function fly(k){ return new Promise(async res => {
-  if (!await crossTo(FLY(k), false, RATE, FLY_START)){ await showIdle(k + 1); return res(); }   // пролёт не загрузился — сразу к следующему щиту
+// стоп-кадр среднего щита: пролёт k на времени t, на паузе
+async function showFrame(k, t){
+  const nx = idle; load(nx, FLY(k), false); await ready(nx); if (!ok(nx)) return false; await seek(nx, t);
+  nx.pause(); swap(); const old = idle; setTimeout(() => { if (old !== act) old.pause(); }, 320);
+  return true;
+}
+// от паузы k начинаем пролёт k и замираем на среднем щите (время t)
+function flyToMid(k, t){ return new Promise(async res => {
+  if (!await crossTo(FLY(k), false, RATE, FLY_START)){ await showFrame(k, t); return res(); }
+  const v = act;
+  watch(v, () => { if (v.currentTime >= t - 0.02 || v.ended){ v.pause(); if (Math.abs(v.currentTime - t) > 0.06) v.currentTime = t; res(); return true; } });
+}); }
+// пролёт от остановки k к паузе k+1: с начала (start) или дальше с текущего кадра (cont); под конец — наплыв в паузу
+function fly(k, cont){ return new Promise(async res => {
+  if (!cont && !await crossTo(FLY(k), false, RATE, FLY_START)){ await showIdle(k + 1); return res(); }   // пролёт не загрузился — сразу к следующему щиту
   const v = act; let nxReady = false, faded = false;
+  if (cont){ v.playbackRate = RATE; v.play().catch(() => {}); }
   setTimeout(() => { const nx = idle; load(nx, IDLE(k + 1), true); ready(nx).then(() => ok(nx) && seek(nx, 0)).then(() => nxReady = true); }, 360);
   watch(v, () => {
     const left = v.duration - v.currentTime;
@@ -372,8 +393,12 @@ function fly(k){ return new Promise(async res => {
     if (faded && (left < 0.06 || v.ended)){ v.pause(); res(); return true; }
   });
 }); }
-// заранее подгружаем пролёт от текущего щита во второй (скрытый) плеер
-function preloadFly(){ setTimeout(() => { if (!busy && si < STOPS.length - 1 && idle !== act) load(idle, FLY(si), false); }, 500); }
+// заранее подгружаем следующий ролик во второй (скрытый) плеер: с паузы — пролёт, со стоп-кадра — следующую паузу
+function preloadFly(){ setTimeout(() => {
+  if (busy || si >= STOPS.length - 1 || idle === act) return;
+  const a = STOPS[si], b = STOPS[si + 1];
+  if (a.idle != null) load(idle, FLY(a.idle), false); else if (b.idle != null) load(idle, IDLE(b.idle), true);
+}, 500); }
 function ui(){
   if (dots.children.length !== STOPS.length) dots.innerHTML = STOPS.map(() => "<b></b>").join("");
   const st = STOPS[si];
@@ -403,8 +428,13 @@ async function goTo(to){
   busy = true;
   busyLine = to === si + 1 ? "Летим к следующему!" : "";
   ui();
-  if (to === si + 1) await fly(si);   // шаг вперёд — пролёт к следующему щиту
-  else await showIdle(to);            // назад/по точкам — наплыв сразу на нужный щит
+  if (to === si + 1){                 // шаг вперёд
+    if (a.idle != null && b.fly != null) await flyToMid(b.fly, b.t);       // пауза → стоп-кадр среднего щита
+    else if (a.fly != null) await fly(a.fly, true);                        // стоп-кадр → дальше по пролёту к паузе
+    else await fly(a.idle);                                                // пауза → пауза (мимо щита без остановки)
+  }
+  else if (b.idle != null) await showIdle(b.idle);   // назад/по точкам — наплыв сразу на нужный щит
+  else await showFrame(b.fly, b.t);
   si = to; busy = false; ui();
   preloadFly();
 }
@@ -484,11 +514,14 @@ const ARM = (() => {
 
 const LINES = {
   intro: "Привет, я Профи — ИИ-агент. Проведу по улице. Свайп вверх — идём. Нажмёте на меня — поболтаем.",
-  sign: {   // по ключу работы; на остановке вспоминаем щит, который пролетели
+  sign: {   // по ключу работы
     vashdesert: "Здесь клиент сам собирает торт и сразу видит цену. А я, кстати, могу отвечать вашим клиентам.",
-    govoryu: "Пролетели Студию «Торт» — там торт собирают в конструкторе. А это курс, который продаёт себя сам.",
-    hybrid: "Мимо — новогодний магазин «ЁлкаТех». А тут автосервис: запись в один клик, без звонков.",
-    rozy: "Видели «Джипshop»? Дорога до Байкала вместо каталога. А здесь ресторан: меню листается как книга."
+    tort: "Торт собирают в конструкторе — и заказ сразу уходит кондитеру в WhatsApp.",
+    govoryu: "Курс, который продаёт себя сам: пробный день, оплата и доступ — без менеджера.",
+    elka: "Новогодний магазин: подбор подарка, корзина, промокоды. Уходить не хочется.",
+    hybrid: "Автосервис гибридов: клиент записывается в один клик, без звонков.",
+    jeepshop: "Дорога до Байкала вместо каталога. Сайт, который хочется досмотреть до конца.",
+    rozy: "Ресторан на 300 мест: меню листается как книга, а стол бронируют прямо с сайта."
   },
   final: "Хотите, я буду так же отвечать вашим клиентам? Нажмите на меня — покажу."
 };
