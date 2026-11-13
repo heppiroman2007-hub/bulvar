@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="noindex,nofollow">
+<title>Начало: живая улица</title>
+<style>
+@font-face{font-family:Onest;src:url(fonts/onest-cyrillic.woff2) format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0400-04FF}
+@font-face{font-family:Onest;src:url(fonts/onest-latin.woff2) format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0000-00FF,U+2000-206F,U+20BD}
+:root{--bg:#05060a;--text:#f4f1ea;--muted:#a59f94;--warm:#ffcf7a;--mono:ui-monospace,"Cascadia Mono",Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+html.lock,html.lock body{overflow:hidden;overscroll-behavior:none}
+body{color:var(--text);font-family:Onest,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.top{position:fixed;inset:0 0 auto 0;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:linear-gradient(#05060acc,#05060a00)}
+.logo{font-weight:800;letter-spacing:2px;font-size:14px;text-decoration:none}.logo b{color:var(--warm)}
+.top a.cta{font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:999px;border:1px solid #ffffff33;background:#05060a88}
+.kicker{font:600 11px var(--mono);letter-spacing:2px;color:var(--warm);text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:700 16px Onest,sans-serif;text-decoration:none;border-radius:999px;padding:15px 24px;border:0;cursor:pointer;
+  color:#1a1206;background:linear-gradient(90deg,#ffd88f,#ffb35c)}
+.btn--ghost{background:#ffffff14;color:var(--text);border:1px solid #ffffff2e}
+
+/* ===== сцена ===== */
+.city{position:relative;height:100svh;touch-action:none}
+.pin{position:relative;height:100svh;overflow:hidden;perspective:var(--P);perspective-origin:50% 50%;
+  background:
+   radial-gradient(1.5px 1.5px at 12% 18%,#fff9 50%,transparent),radial-gradient(1px 1px at 33% 9%,#fff8 50%,transparent),
+   radial-gradient(1.2px 1.2px at 71% 14%,#fffa 50%,transparent),radial-gradient(1px 1px at 86% 26%,#fff7 50%,transparent),
+   radial-gradient(1px 1px at 55% 4%,#fff8 50%,transparent),radial-gradient(1.3px 1.3px at 23% 30%,#fff6 50%,transparent),
+   radial-gradient(60% 35% at 50% 42%,#2a3550,transparent 70%),
+   linear-gradient(#070a14,#111827 45%,#05060a 60%)}
+.w3,.g3{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.g3{left:0;top:0}
+.pl{position:absolute;left:0;top:0;transform-origin:0 0;display:block}
+.ground{background:
+  linear-gradient(90deg,#3a332a 0 var(--wk),#4a4237 var(--wk) calc(var(--wk) + 4px),transparent calc(var(--wk) + 4px) calc(100% - var(--wk) - 4px),#4a4237 calc(100% - var(--wk) - 4px) calc(100% - var(--wk)),#3a332a calc(100% - var(--wk))),
+  linear-gradient(90deg,transparent 49.6%,#e8c98a26 49.6% 50.4%,transparent 50.4%),
+  repeating-linear-gradient(0deg,#00000040 0 2px,transparent 2px 18px),
+  repeating-linear-gradient(90deg,#00000040 0 2px,transparent 2px 22px),
+  radial-gradient(60% 50% at 50% 50%,#3a3125,#211d18)}
+.roof{background:linear-gradient(#1c2230,#0d1018)}
+.cap{background:linear-gradient(90deg,#1a1510,#2a231b)}
+.pole{background:linear-gradient(90deg,#0b0a09,#2a2622,#0b0a09)}
+.bulb{border-radius:50%;background:radial-gradient(circle,#fff3d0 0 16%,#ffcf7a88 28%,#ffb35c26 50%,transparent 68%)}
+/* щит рисуется в 3 раза крупнее и уменьшается трансформом — браузер растрирует его чётко */
+.sign{cursor:pointer;border-radius:24px;background:#15110d;padding:18px;border:6px solid #3a3024}
+.sign img{display:block;width:100%;aspect-ratio:1.49;object-fit:cover;object-position:top;border-radius:12px}
+.sign span{display:block;text-align:center;font:800 39px Onest;letter-spacing:4.5px;color:#ffe6b0;padding:21px 6px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sign.on{border-color:#ffcf7a}
+.arm{background:linear-gradient(#0b0907,#3a3127,#0b0907)}
+/* щит прикреплён: планка с лампами сверху, свет падает на картинку, стойка в тротуар */
+.sign::before{content:"";position:absolute;left:10%;right:10%;top:-42px;height:36px;border-radius:9px 9px 0 0;
+  background:radial-gradient(circle at 17% 100%,#fff3d0 0 9px,transparent 12px),radial-gradient(circle at 50% 100%,#fff3d0 0 9px,transparent 12px),radial-gradient(circle at 83% 100%,#fff3d0 0 9px,transparent 12px),linear-gradient(#3a3127,#15110d)}
+.sign::after{content:"";position:absolute;left:18px;right:18px;top:18px;height:55%;border-radius:12px;pointer-events:none;background:linear-gradient(#fff1c844,#fff1c80a 60%,transparent)}
+.spole{background:linear-gradient(90deg,#0b0907,#4a4034 45%,#1a1610),linear-gradient(transparent calc(100% - 8px),#0b0907 0);box-shadow:inset 0 -6px 0 #0b0907}
+
+.shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 80% at 50% 50%,transparent 55%,#05060ad0 100%)}
+.iris{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 48%,transparent calc(var(--r,100) * 1%),#05060a calc(var(--r,100) * 1% + 14%))}
+.intro{position:absolute;left:0;right:0;top:76px;z-index:5;text-align:center;padding:0 18px;pointer-events:none;transition:opacity .5s}
+.intro h1{font-size:clamp(30px,8vw,64px);letter-spacing:-.035em;line-height:1.03;margin-top:10px;text-shadow:0 2px 30px #000}
+.intro p{color:#d8d0c2;margin-top:10px;font-size:15px;text-shadow:0 1px 10px #000}
+.next{position:absolute;left:50%;bottom:22px;translate:-50% 0;z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;color:#fff;cursor:pointer;
+  font:600 11px var(--mono);letter-spacing:2px;transition:opacity .3s}
+.next i{width:44px;height:44px;border-radius:50%;border:1px solid #ffffff55;display:grid;place-items:center;font-style:normal;font-size:18px;background:#05060a88;animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{translate:0 6px}}
+.next.hide,.busy .next{opacity:0;pointer-events:none}
+.capt{position:absolute;left:12px;right:12px;bottom:16px;z-index:6;max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px;
+  padding:12px 12px 12px 16px;border-radius:20px;background:#0c0b0af0;border:1px solid #ffffff1f;transition:opacity .35s, translate .35s}
+.capt.hide{opacity:0;translate:0 14px;pointer-events:none}
+.capt__t{flex:1;min-width:0}.capt__t small{font:600 10.5px var(--mono);letter-spacing:1.4px;color:var(--warm);text-transform:uppercase}
+.capt__t b{display:block;font-size:16px;line-height:1.2;margin-top:3px}
+.capt .btn{padding:12px 16px;font-size:14px;flex:none}
+.capt__n{position:absolute;top:-24px;left:16px;right:16px;display:flex;justify-content:space-between;font:600 10.5px var(--mono);letter-spacing:2px;color:#ffffffa0}
+.final{position:absolute;left:0;right:0;bottom:30px;z-index:6;text-align:center;padding:0 18px;opacity:0;translate:0 14px;transition:.5s;pointer-events:none}
+.final.on{opacity:1;translate:0 0;pointer-events:auto}
+.final p{font-size:clamp(21px,5.2vw,34px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:16px;text-shadow:0 2px 24px #000}
+.final small{display:block;margin-top:12px;font:600 11px var(--mono);letter-spacing:2px;color:#ffffffa0}
+.dots{position:absolute;right:12px;top:50%;translate:0 -50%;z-index:6;display:flex;flex-direction:column;gap:7px}
+.dots b{width:4px;height:14px;border-radius:2px;background:#ffffff2a;transition:background .3s}.dots b.on{background:var(--warm)}
+
+/* модалка */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:#05060ae6;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal.open{opacity:1;pointer-events:auto}
+.mcard{position:relative;width:min(100%,760px);max-height:calc(100svh - 32px);overflow:auto;border-radius:22px;background:#12100d;border:1px solid #ffffff1f;
+  transform:scale(.94) translateY(10px);transition:transform .3s}
+.modal.open .mcard{transform:none}
+.mcard img{display:block;width:100%;aspect-ratio:1.49;object-fit:cover;object-position:top}
+.mbody{padding:18px 18px 20px}
+.mbody h3{font-size:22px;letter-spacing:-.02em;line-height:1.15;margin:6px 0 8px}
+.mbody p{color:#d6cebf;font-size:15px;line-height:1.45}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 16px}
+.tags span{font:600 11px var(--mono);letter-spacing:1px;padding:5px 9px;border-radius:999px;border:1px solid #ffcf7a55;color:var(--warm)}
+.mact{display:flex;gap:10px;flex-wrap:wrap}
+.x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid #ffffff33;background:#05060acc;color:#fff;font-size:20px;cursor:pointer;z-index:2}
+
+.end{padding:90px 18px 110px;text-align:center;min-height:70vh}
+.end p{color:var(--muted);margin:10px auto 22px;max-width:28em}
+.top__r{display:flex;gap:8px}
+.top button.cta{font:600 13px Onest,sans-serif;color:var(--text);cursor:pointer;padding:8px 14px;border-radius:999px;border:1px solid #ffcf7a88;background:#05060a88}
+.dots b{cursor:pointer;position:relative}.dots b::after{content:"";position:absolute;inset:-6px -10px}
+
+/* ===== робот Профи ===== */
+.bot{position:absolute;left:2px;bottom:140px;z-index:7;width:112px;height:120px;cursor:pointer;border:0;background:none;padding:0;transition:bottom .4s, left .4s}
+.bot .led,.bot .led2,.bot .batt{animation:tip 1.4s ease-in-out infinite}
+.bot.talk .led{animation:tip .25s ease-in-out infinite}
+.bot svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 6px 10px #000a)}
+.bot .body{transform-origin:40px 84px;animation:hover 2.4s ease-in-out infinite}
+.bot.roll .body{animation:none;transform:rotate(-8deg)}
+.bot .wheel{transform-origin:40px 84px}
+.bot.roll .wheel{animation:spin .5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes hover{50%{transform:translateY(-2px) rotate(1.5deg)}}
+.bot .eye{transform-box:fill-box;transform-origin:center;animation:blink 4.2s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.bot .arm{transform-box:fill-box;transform-origin:15% 50%}
+.bot.wave .arm{animation:wave .5s ease-in-out 3 alternate}
+@keyframes wave{to{transform:rotate(-40deg)}}
+.bot .tip{animation:tip 1.6s ease-in-out infinite}@keyframes tip{50%{opacity:.35}}
+.bot.final-pos{bottom:190px}
+.bub{position:absolute;left:112px;bottom:226px;z-index:7;max-width:min(240px,calc(100vw - 112px));padding:10px 13px;border-radius:16px 16px 16px 4px;
+  background:#f4efe6;color:#1b1610;font-size:13.5px;line-height:1.35;box-shadow:0 8px 24px #000a;opacity:0;translate:0 6px;transition:opacity .3s, translate .3s, bottom .4s;pointer-events:none}
+.bub.on{opacity:1;translate:0 0}
+.bub b{display:block;font:700 10px var(--mono);letter-spacing:1.5px;color:#9a6a1f;margin-bottom:3px}
+.bub.final-pos{bottom:276px}
+@media (min-width:900px){.bot{left:24px;bottom:110px;width:170px;height:182px}.bub{left:190px;bottom:250px;max-width:280px;font-size:15px}.bot.final-pos{bottom:110px}.bub.final-pos{bottom:250px}}
+.chat__h svg{width:40px;height:44px}
+.beam{background:radial-gradient(55% 75% at 50% 0%,#fff3c860,#fff3c818 55%,transparent 80%)}
+.rglow{background:radial-gradient(50% 80% at 50% 0%,#ff303048,transparent 75%)}
+
+/* ===== чат ===== */
+.chat{position:fixed;left:0;right:0;bottom:0;z-index:60;max-width:520px;margin:0 auto;height:min(78svh,640px);display:flex;flex-direction:column;
+  background:#0f0d0b;border:1px solid #ffffff1f;border-bottom:0;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px #000c;translate:0 105%;transition:translate .35s cubic-bezier(.3,.9,.3,1)}
+.chat.open{translate:0 0}
+.chat__h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #ffffff14}
+.chat__h svg{width:34px;height:40px}
+.chat__h div{flex:1}.chat__h b{display:block;font-size:15px}.chat__h small{font:600 10px var(--mono);letter-spacing:1.4px;color:#7cf3ff}
+.chat__x{width:36px;height:36px;border-radius:50%;border:1px solid #ffffff2e;background:none;color:#fff;font-size:18px;cursor:pointer}
+.chat__m{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:contain}
+.msg{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14.5px;line-height:1.4;white-space:pre-line}
+.msg.r{align-self:flex-start;background:#201c17;border-bottom-left-radius:4px}
+.msg.u{align-self:flex-end;background:#ffcf7a;color:#1a1206;border-bottom-right-radius:4px}
+.msg.sys{align-self:center;background:none;font:600 10px var(--mono);letter-spacing:1.5px;color:#7cf3ff;text-transform:uppercase;padding:4px}
+.kb{display:flex;flex-wrap:wrap;gap:6px;align-self:flex-start;max-width:92%}
+.kb button,.kb a{font:600 13.5px Onest,sans-serif;padding:9px 13px;border-radius:12px;border:1px solid #ffcf7a66;background:#ffcf7a14;color:#ffe6b0;cursor:pointer;text-decoration:none}
+.kb button:disabled{opacity:.4;cursor:default}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:11px 13px;border-radius:14px;background:#201c17}
+.typing i{width:6px;height:6px;border-radius:50%;background:#bbb;animation:dot 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{50%{opacity:.3;translate:0 -2px}}
+.chat__f{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #ffffff14}
+.chat__f input{flex:1;min-width:0;font:15px Onest,sans-serif;color:#fff;background:#1a1714;border:1px solid #ffffff22;border-radius:999px;padding:11px 15px;outline:none}
+.chat__f input:focus{border-color:#ffcf7a}
+.chat__f button{width:44px;height:44px;border-radius:50%;border:0;background:#ffcf7a;color:#1a1206;font-size:18px;cursor:pointer}
+
+/* ===== цены ===== */
+.price{padding:84px 18px 60px;max-width:980px;margin:0 auto}
+.price h2{font-size:clamp(28px,6.5vw,48px);letter-spacing:-.03em;line-height:1.05;margin:10px 0 8px}
+.price>p{color:var(--muted);font-size:15px}
+.pgrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:22px}
+@media (min-width:700px){.pgrid{grid-template-columns:1fr 1fr}}
+.pc{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-radius:18px;background:#ffffff0a;border:1px solid #ffffff17}
+.pc b{display:block;font-size:17px}.pc small{display:block;color:var(--muted);font-size:13px;margin-top:3px}
+.pc span{flex:none;font-weight:800;font-size:17px;color:var(--warm);white-space:nowrap}
+.pc--hot{border-color:#ffcf7a66;background:#ffcf7a0f}
+.price .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+
+.vid{position:absolute;inset:0;background:#05060a;overflow:hidden}
+.vid::before{content:"";position:absolute;inset:-40px;background:var(--poster) center/cover;filter:blur(28px) brightness(.45);transform:scale(1.1)}
+.vid video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}
+.vid video.on{opacity:1}
+/* ролик вертикальный: на широком экране показываем целиком по центру, по бокам — размытый фон */
+@media (min-aspect-ratio:4/5){.vid video{object-fit:contain}}
+
+.shade{background:linear-gradient(#05060a99,transparent 18%,transparent 70%,#05060acc)!important}
+</style>
+</head>
+<body>
+<header class="top"><a class="logo" href="https://paraevprofit.ru/">PARAEV<b>.</b>PROFIT</a><div class="top__r"><button class="cta" id="toPrice">Цены</button><a class="cta" href="https://t.me/managerparaev1">Написать</a></div></header>
+<template id="botSvg">
+  <svg viewBox="0 0 130 140" aria-hidden="true">
+    <defs>
+      <linearGradient id="mt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5c4535"/><stop offset=".32" stop-color="#e9c8a3"/><stop offset=".55" stop-color="#c39870"/><stop offset="1" stop-color="#4e3a2d"/></linearGradient>
+      <linearGradient id="mt2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d8b3"/><stop offset="1" stop-color="#7f604a"/></linearGradient>
+      <radialGradient id="jn" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f6dcb8"/><stop offset=".7" stop-color="#a07c5c"/><stop offset="1" stop-color="#4e3a2d"/></radialGradient>
+    </defs>
+    <g class="cart">
+      <ellipse cx="62" cy="134" rx="50" ry="4" fill="#000" opacity=".45"/>
+      <rect x="14" y="99" width="22" height="12" rx="2" fill="url(#mt2)"/>
+      <rect x="86" y="97" width="26" height="16" rx="2" fill="#2e251e" stroke="#7cc8ff44"/>
+      <rect x="90" y="101" width="9" height="3" rx="1" fill="#7cf3ff" class="batt"/>
+      <rect x="18" y="108" width="88" height="14" rx="3" fill="url(#mt2)" stroke="#7cc8ff55" stroke-width=".8"/>
+      <rect x="22" y="112" width="80" height="2" fill="#5c4535" opacity=".6"/>
+      <g class="whl" data-x="30" data-y="127"><circle r="8" fill="#17120e"/><circle r="4.2" fill="url(#jn)"/><path d="M0-7V7M-7 0H7" stroke="#3b2f26" stroke-width="1.6"/></g>
+      <g class="whl" data-x="94" data-y="127"><circle r="8" fill="#17120e"/><circle r="4.2" fill="url(#jn)"/><path d="M0-7V7M-7 0H7" stroke="#3b2f26" stroke-width="1.6"/></g>
+      <ellipse cx="62" cy="106" rx="24" ry="5.5" fill="url(#mt2)"/>
+    </g>
+    <rect x="50" y="62" width="24" height="44" rx="3" fill="url(#mt)"/>
+    <rect x="50" y="80" width="24" height="3" fill="#4e3a2d" opacity=".6"/>
+    <rect x="55" y="90" width="6" height="8" rx="1" fill="#2e251e" stroke="#7cc8ff55" stroke-width=".6"/>
+    <g class="j1">
+      <rect x="-7.5" y="-54" width="15" height="54" rx="5" fill="url(#mt)"/>
+      <rect x="-9" y="-40" width="18" height="16" rx="3" fill="url(#mt2)"/>
+      <g class="j2">
+        <rect x="-4.6" y="-48" width="9.2" height="48" rx="4" fill="url(#mt)"/>
+        <rect x="-5.8" y="-34" width="11.6" height="3" rx="1.5" fill="#4e3a2d"/>
+        <rect x="-5.8" y="-18" width="11.6" height="3" rx="1.5" fill="#4e3a2d"/>
+        <g class="j3">
+          <rect x="-7" y="-15" width="14" height="13" rx="2.5" fill="url(#mt)"/>
+          <rect x="-5" y="-19" width="10" height="5" rx="1.5" fill="url(#mt2)"/>
+          <g class="cl"><path d="M0 0 L-4 -11 L-1 -14 L2 -2 Z" fill="url(#mt2)" stroke="#4e3a2d" stroke-width=".6"/></g>
+          <g class="cr"><path d="M0 0 L4 -11 L1 -14 L-2 -2 Z" fill="url(#mt2)" stroke="#4e3a2d" stroke-width=".6"/></g>
+          <circle class="led" cx="0" cy="-8" r="2.2" fill="#7cf3ff"/>
+          <circle r="5.5" fill="url(#jn)" stroke="#4e3a2d" stroke-width=".6"/>
+        </g>
+        <circle r="7.5" fill="url(#jn)" stroke="#4e3a2d" stroke-width=".7"/><circle r="2.6" fill="#3b2f26"/>
+      </g>
+      <circle r="11.5" fill="url(#jn)" stroke="#4e3a2d" stroke-width=".8"/>
+      <circle r="5" fill="#2e251e"/><circle r="2" fill="#7cf3ff" class="led2"/>
+      <circle cx="0" cy="-8.5" r="1" fill="#3b2f26"/><circle cx="8.5" cy="0" r="1" fill="#3b2f26"/><circle cx="0" cy="8.5" r="1" fill="#3b2f26"/><circle cx="-8.5" cy="0" r="1" fill="#3b2f26"/>
+    </g>
+  </svg>
+</template>
+
+<section class="city" id="city">
+  <div class="pin" id="pin">
+    <div class="vid" id="vid"><video id="vA" class="on" muted playsinline preload="auto"></video><video id="vB" muted playsinline preload="auto"></video></div>
+    <div class="shade"></div>
+    
+    <div class="intro" id="intro">
+      <div class="kicker">// Сайты · чат-боты · ИИ-агенты</div>
+      <h1>Мои сайты<br>смотрят на улице</h1>
+      <p>Пройдитесь по бульвару моих работ</p>
+    </div>
+    <div class="dots" id="dots"></div>
+    <button class="next" id="next" aria-label="Дальше"><i>↓</i><span>СВАЙП ВВЕРХ</span></button>
+    <div class="capt hide" id="capt">
+      <div class="capt__n"><span id="captN"></span><span>свайп — дальше</span></div>
+      <div class="capt__t"><small id="captK"></small><b id="captT"></b></div>
+      <button class="btn" id="captB">Смотреть</button>
+    </div>
+    <div class="final" id="final">
+      <p>Хотите, чтобы так же<br>смотрели на ваш сайт?</p>
+      <a class="btn" href="https://t.me/managerparaev1">Хочу такой сайт →</a>
+      <small>свайп — цены и условия</small>
+    </div>
+    <button class="bot" id="bot" aria-label="Профи — ИИ-агент, открыть чат"></button>
+    <div class="bub" id="bub"><b>ПРОФИ · ИИ-АГЕНТ</b><span id="bubT"></span></div>
+  </div>
+</section>
+
+<section class="price" id="end">
+  <div class="kicker">// Цены</div>
+  <h2>Сколько стоит</h2>
+  <p>Точную цену назову после короткого разговора о задаче. Макет первого экрана — бесплатно.</p>
+  <div class="pgrid">
+    <div class="pc"><div><b>Лендинг</b><small>Одна страница, которая продаёт</small></div><span>от 7 500 ₽</span></div>
+    <div class="pc"><div><b>Чат-бот на кнопках</b><small>Запись и ответы в Telegram, VK, MAX</small></div><span>от 15 000 ₽</span></div>
+    <div class="pc"><div><b>Сайт + чат-бот</b><small>Сайт приводит, бот записывает</small></div><span>от 25 000 ₽</span></div>
+    <div class="pc"><div><b>Интернет-магазин</b><small>Корзина и оплата на сайте</small></div><span>от 26 000 ₽</span></div>
+    <div class="pc pc--hot"><div><b>ИИ-агент</b><small>Отвечает клиентам сам, как живой менеджер</small></div><span>от 45 000 ₽</span></div>
+    <div class="pc pc--hot"><div><b>Сайт + ИИ-агент</b><small>Всё под ключ</small></div><span>55 000 ₽</span></div>
+  </div>
+  <div class="acts"><a class="btn" href="https://t.me/managerparaev1">Обсудить проект →</a><button class="btn btn--ghost" id="askBot">Спросить Профи</button></div>
+</section>
+
+<div class="chat" id="chat" role="dialog" aria-label="Чат с Профи">
+  <div class="chat__h"><span id="chatAva"></span><div><b>Профи</b><small>ИИ-АГЕНТ · ДЕМО</small></div><button class="chat__x" id="chatX" aria-label="Закрыть">×</button></div>
+  <div class="chat__m" id="chatM"></div>
+  <form class="chat__f" id="chatF"><input id="chatI" placeholder="Напишите как обычно…" autocomplete="off"><button aria-label="Отправить">↑</button></form>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mT">
+  <div class="mcard">
+    <button class="x" id="mX" aria-label="Закрыть">×</button>
+    <img id="mI" alt="">
+    <div class="mbody">
+      <div class="kicker" id="mK"></div>
+      <h3 id="mT"></h3>
+      <p id="mD"></p>
+      <div class="tags" id="mG"></div>
+      <div class="mact"><a class="btn" id="mA" target="_blank" rel="noopener">Открыть сайт ↗</a><a class="btn btn--ghost" href="https://t.me/managerparaev1">Хочу такой же</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// порядок = колонка работ на главной + Джипshop; последний щит бульвара — сайт студии (финал)
+const WORKS = [
+  {img:"img/rozy.jpg", k:"Ресторан южной кухни · Омск", t:"«Розы морозы» — меню, которое открывается как книга",
+   d:"Меню из 90 блюд с ценами открывается как настоящая книга: гость собирает предзаказ и бронирует стол на нужный адрес.", g:["3D-меню","предзаказ и бронь","анимации"], u:"https://paraevprofit.ru/demo/rozy-morozy/"},
+  {img:"img/vashdesert.jpg", k:"Кондитерская студия · Биробиджан", t:"«Ваш десерт» — торт на заказ с расчётом цены",
+   d:"Клиент собирает торт на сайте и сразу видит цену, заказ уходит кондитеру в WhatsApp или MAX.", g:["калькулятор торта","заказ в мессенджер","SEO под город"], u:"https://vashdesert.ru/"},
+  {img:"img/govoryu.jpg", k:"Онлайн-курс развития речи · вся Россия", t:"«Говорю уверенно» — курс, который продаёт себя сам",
+   d:"Сайт с бесплатным пробным днём, Telegram-бот ведёт занятия, оплата через Robokassa — доступ открывается сам, без менеджера.", g:["сайт + Telegram-бот","онлайн-оплата","доступ после оплаты"], u:"https://govoryu-uverenno.ru/"},
+  {img:"img/hybrid.jpg", k:"Автосервис · Комсомольск-на-Амуре", t:"«Гибрид Сервис» — ремонт и обслуживание гибридов",
+   d:"Лендинг с каталогом услуг, отзывами из 2ГИС и записью в один клик через мессенджеры.", g:["лендинг","онлайн-запись","отзывы 2ГИС"], u:"https://hybrydkms.ru"},
+  {img:"img/tort.jpg", k:"Кондитерская студия · Комсомольск-на-Амуре", t:"Студия «Торт» — сайт, на котором хочется заказать торт",
+   d:"Каталог с ценами и конструктор бенто: размер, начинка, цвет крема и надпись — готовый заказ уходит в WhatsApp.", g:["конструктор бенто","заказ в WhatsApp","анимации"], u:"https://heppiroman2007-hub.github.io/torty/studiya-tort/"},
+  {img:"img/elka.jpg", k:"Интернет-магазин электроники · демо", t:"«ЁлкаТех» — новогодний магазин, из которого не хочется уходить",
+   d:"Таймер до Нового года, подбор подарка по биркам, каталог с поиском и фильтрами, корзина с промокодом.", g:["интернет-магазин","корзина и промокоды","анимации"], u:"https://heppiroman2007-hub.github.io/elektronika/elkatech/"},
+  {img:"img/jeepshop.jpg", k:"Тюнинг внедорожников · Иркутск", t:"«Джипshop 4×4» — маршрут до Байкала вместо каталога",
+   d:"Первый экран — ролик, по которому едут выноски с товарами; дальше каталог по точкам маршрута до Байкала.", g:["видео-первый экран","каталог","корзина"], u:"https://paraevprofit.ru/demo/jeepshop/"}
+];
+
+/* ---------- видео-бульвар: у каждого щита пауза (камера стоит, люди живые), свайп — пролёт к следующему щиту ----------
+   {D}_idle_{i}.mp4 — пауза у щита с сайтом i (по кругу); {D}_fly_{i}.mp4 — пролёт: первый щит с сайтом i, следующий — i+1.
+   Последняя остановка — щит с сайтом студии. D = m (телефон 9:16) или pc (16:9). ?m=phone / ?m=pc — принудительно. */
+const FORCE = new URLSearchParams(location.search).get("m");
+const MQ = matchMedia("(max-aspect-ratio: 1/1)");
+const MOB = FORCE ? FORCE === "phone" : MQ.matches;
+if (!FORCE) MQ.addEventListener("change", () => location.reload());   // окно повернули/сузили — ролики под новый экран
+const D = MOB ? "m" : "pc";
+const IDLE = i => `vid/${D}_idle_${i}.mp4`, FLY = i => `vid/${D}_fly_${i}.mp4`;
+document.documentElement.style.setProperty("--poster", `url(${IDLE(0).replace(".mp4", ".jpg")})`);
+const RATE = 1.15;
+const STOPS = [...WORKS.map((w, i) => ({sign:i, intro:i === 0})), {final:true}];
+const vA = $("vA"), vB = $("vB"), pin = $("pin");
+let act = vA, idle = vB, si = 0, busy = false, busyLine = "";
+const intro = $("intro"), capt = $("capt"), fin = $("final"), nextB = $("next"), dots = $("dots");
+const bot = $("bot"), bub = $("bub");
+bot.appendChild($("botSvg").content.cloneNode(true));
+$("chatAva").appendChild($("botSvg").content.cloneNode(true));
+
+function load(v, src, loop){ v.loop = !!loop; if (v.dataset.s !== src){ v.dataset.s = src; v.poster = src.replace(".mp4", ".jpg"); v.src = src; v.load(); } }
+function seek(v, t){ return new Promise(res => {
+  const go = () => { const T = t === "end" ? v.duration - 0.05 : t; if (Math.abs(v.currentTime - T) < 0.01) return res();
+    v.addEventListener("seeked", () => res(), {once:true}); v.currentTime = T; };
+  if (v.readyState >= 1) go(); else v.addEventListener("loadedmetadata", go, {once:true});
+}); }
+function ready(v){ return new Promise(res => v.readyState >= 2 ? res() : v.addEventListener("loadeddata", () => res(), {once:true})); }
+function swap(){ act.classList.remove("on"); idle.classList.add("on"); [act, idle] = [idle, act]; }
+// следим за видео и по кадрам, и по timeupdate (rAF может спать в фоне)
+function watch(v, fn){ let done = false;
+  const stop = () => { done = true; v.removeEventListener("timeupdate", tu); };
+  const tu = () => { if (!done && fn()) stop(); };
+  v.addEventListener("timeupdate", tu);
+  (function raf(){ if (done) return; if (fn()) { stop(); return; } requestAnimationFrame(raf); })();
+}
+// наплыв на другой ролик: новый начинает играть с начала, старый гасим после перехода
+async function crossTo(src, loop, rate){
+  const nx = idle; load(nx, src, loop); await ready(nx); await seek(nx, 0);
+  nx.playbackRate = rate; nx.play().catch(() => {}); swap();
+  const old = idle; setTimeout(() => { if (old !== act) old.pause(); }, 320);
+}
+// пауза у щита k — зацикленный ролик, люди шевелятся
+const showIdle = k => crossTo(IDLE(k), true, 1);
+// пролёт от щита k к следующему; под конец — наплыв в паузу следующего щита
+function fly(k){ return new Promise(async res => {
+  await crossTo(FLY(k), false, RATE);
+  const v = act; let nxReady = false, faded = false;
+  setTimeout(() => { const nx = idle; load(nx, IDLE(k + 1), true); ready(nx).then(() => seek(nx, 0)).then(() => nxReady = true); }, 360);
+  watch(v, () => {
+    const left = v.duration - v.currentTime;
+    if (left < 0.45 && !nxReady && !v.paused) v.pause();               // пауза следующего щита ещё не загрузилась — держим кадр
+    if (left < 0.45 && nxReady && v.paused && !v.ended) v.play().catch(() => {});
+    if (!faded && nxReady && left < 0.42){ faded = true; idle.playbackRate = 1; idle.play().catch(() => {}); swap(); }
+    if (faded && (left < 0.06 || v.ended)){ v.pause(); res(); return true; }
+  });
+}); }
+// заранее подгружаем пролёт от текущего щита во второй (скрытый) плеер
+function preloadFly(){ setTimeout(() => { if (!busy && si < STOPS.length - 1 && idle !== act) load(idle, FLY(si), false); }, 500); }
+function ui(){
+  if (dots.children.length !== STOPS.length) dots.innerHTML = STOPS.map(() => "<b></b>").join("");
+  const st = STOPS[si];
+  pin.classList.toggle("busy", busy);
+  intro.style.opacity = si === 0 && !busy ? 1 : 0;
+  nextB.classList.toggle("hide", si !== 0);
+  const showCapt = !busy && st.sign != null && !(si === 0);
+  capt.classList.toggle("hide", !showCapt && !(si === 0 && !busy));
+  if (st.sign != null){ const w = WORKS[st.sign]; $("captK").textContent = w.k; $("captT").textContent = w.t; $("captN").textContent = `РАБОТА ${st.sign + 1} / ${WORKS.length}`; }
+  const last = !!st.final;
+  fin.classList.toggle("on", !busy && last);
+  if (last) capt.classList.add("hide");
+  [...dots.children].forEach((b, j) => b.classList.toggle("on", j === si));
+  bot.classList.toggle("final-pos", last); bub.classList.toggle("final-pos", last);
+  ARM.setRolling(busy); clearTimeout(ARM.t);
+  if (busy) ARM.set(busyLine ? "up" : "roll");
+  else if (si === 0 || last){ ARM.set("wave"); ARM.t = setTimeout(() => ARM.set(last ? "point" : "idle"), 1800); }
+  else ARM.set("point");
+  if (busy) say(busyLine);
+  else say(si === 0 ? LINES.intro : last ? LINES.final : LINES.sign[st.sign]);
+}
+async function goTo(to){
+  if (busy || modal.classList.contains("open") || chatOpen) return;
+  if (to >= STOPS.length && si === STOPS.length - 1){ unlock(); return; }
+  if (to < 0 || to >= STOPS.length || to === si) return;
+  const a = STOPS[si], b = STOPS[to];
+  busy = true;
+  busyLine = to === si + 1 ? "Летим к следующему!" : "";
+  ui();
+  if (to === si + 1) await fly(si);   // шаг вперёд — пролёт к следующему щиту
+  else await showIdle(to);            // назад/по точкам — наплыв сразу на нужный щит
+  si = to; busy = false; ui();
+  preloadFly();
+}
+const go = d => goTo(si + d);
+
+let locked = true;
+function lock(){ locked = true; document.documentElement.classList.add("lock"); }
+function unlock(){ locked = false; document.documentElement.classList.remove("lock"); say(""); $("end").scrollIntoView({behavior:"smooth"}); }
+lock();
+$("toPrice").addEventListener("click", () => { if (!busy) unlock(); });
+dots.addEventListener("click", e => { const j = [...dots.children].indexOf(e.target); if (j >= 0) goTo(j); });
+let lastWheel = 0, needGap = false, acc = 0;
+addEventListener("wheel", e => {
+  if (chatOpen) return;
+  const now = performance.now(), gap = now - lastWheel; lastWheel = now;
+  if (!locked){ if (scrollY <= 2 && e.deltaY < 0){ e.preventDefault(); lock(); scrollTo(0, 0); needGap = true; } return; }
+  e.preventDefault();
+  if (gap > 220){ needGap = false; acc = 0; }
+  if (needGap || busy) return;
+  acc += e.deltaY;
+  if (Math.abs(acc) > 30){ go(acc > 0 ? 1 : -1); acc = 0; needGap = true; }
+}, {passive:false});
+let ty0 = null, tx0 = 0;
+addEventListener("touchstart", e => { if (e.touches.length !== 1) return; ty0 = e.touches[0].clientY; tx0 = e.touches[0].clientX; }, {passive:true});
+addEventListener("touchmove", e => { if (locked && !chatOpen && !modal.classList.contains("open")) e.preventDefault(); }, {passive:false});
+addEventListener("touchend", e => {
+  if (ty0 == null || chatOpen){ ty0 = null; return; }
+  const dy = ty0 - e.changedTouches[0].clientY, dx = tx0 - e.changedTouches[0].clientX; ty0 = null;
+  if (Math.abs(dy) < 40 || Math.abs(dy) < Math.abs(dx)) return;
+  if (!locked){ if (scrollY <= 2 && dy < 0){ lock(); scrollTo(0, 0); } return; }
+  go(dy > 0 ? 1 : -1);
+});
+addEventListener("keydown", e => {
+  if (e.key === "Escape"){ closeChat(); return closeW(); }
+  if (!locked || chatOpen) return;
+  if (["ArrowDown","PageDown"," "].includes(e.key)){ e.preventDefault(); go(1); }
+  if (["ArrowUp","PageUp"].includes(e.key)){ e.preventDefault(); go(-1); }
+});
+nextB.addEventListener("click", () => go(1));
+$("captB").addEventListener("click", () => { const k = STOPS[si].sign; if (k != null) openW(k); });
+// робот живёт в своём цикле
+let lastT = performance.now();
+requestAnimationFrame(function tick(now){ const dt = Math.min(0.05, (now - lastT)/1000); lastT = now; if (locked && !document.hidden) ARM.frame(now, dt); requestAnimationFrame(tick); });
+
+/* ---------- рука-робот: суставы плавно тянутся к позе, сверху — лёгкое «дыхание» ---------- */
+const POSE = { idle:[-18, 92, 60, 8], point:[14, 46, 22, 16], wave:[10, 22, 4, 20], roll:[-30, 122, 92, 3], up:[2, 6, -4, 22] };
+function armParts(svg){ return {j1:svg.querySelector(".j1"), j2:svg.querySelector(".j2"), j3:svg.querySelector(".j3"), cl:svg.querySelector(".cl"), cr:svg.querySelector(".cr"), whl:[...svg.querySelectorAll(".whl")]}; }
+function armApply(P, a, claw, wheel){
+  P.j1.setAttribute("transform", `translate(62 64) rotate(${a[0].toFixed(2)})`);
+  P.j2.setAttribute("transform", `translate(0 -54) rotate(${a[1].toFixed(2)})`);
+  P.j3.setAttribute("transform", `translate(0 -48) rotate(${a[2].toFixed(2)})`);
+  P.cl.setAttribute("transform", `translate(-2.5 -15) rotate(${(-claw).toFixed(2)})`);
+  P.cr.setAttribute("transform", `translate(2.5 -15) rotate(${claw.toFixed(2)})`);
+  P.whl.forEach(w => w.setAttribute("transform", `translate(${w.dataset.x} ${w.dataset.y}) rotate(${wheel.toFixed(1)})`));
+}
+const ARM = (() => {
+  const P = armParts(bot.querySelector("svg"));
+  let cur = [...POSE.idle], tgt = POSE.idle, state = "idle", talkUntil = 0, wheel = 0, rolling = false;
+  armApply(armParts($("chatAva").querySelector("svg")), POSE.wave, 18, 0);
+  return {
+    set(s){ state = s; tgt = POSE[s]; },
+    talk(ms){ talkUntil = performance.now() + ms; bot.classList.add("talk"); clearTimeout(this.tt); this.tt = setTimeout(() => bot.classList.remove("talk"), ms); },
+    setRolling(v){ rolling = v; },
+    frame(now, dt){
+      const k = Math.min(1, dt*5);
+      for (let i = 0; i < 4; i++) cur[i] += (tgt[i] - cur[i])*k;
+      const a = [cur[0] + Math.sin(now/950)*3, cur[1] + Math.sin(now/1300 + 1)*4, cur[2] + Math.sin(now/700)*5];
+      if (state === "wave") a[2] += Math.sin(now/130)*30;
+      if (rolling) a[0] += Math.sin(now/160)*1.5;
+      let claw = cur[3];
+      if (now < talkUntil) claw = 4 + Math.abs(Math.sin(now/85))*20;
+      if (rolling) wheel += dt*520;
+      armApply(P, a, claw, wheel);
+    }
+  };
+})();
+
+const LINES = {
+  intro: "Привет, я Профи — ИИ-агент. Проведу по улице. Свайп вверх — идём. Нажмёте на меня — поболтаем.",
+  sign: [
+    "Ресторан на 300 мест: меню листается как книга, а стол бронируют прямо с сайта.",
+    "Здесь клиент сам собирает торт и сразу видит цену. А я, кстати, могу отвечать вашим клиентам.",
+    "Курс, который продаёт себя сам: пробный день, оплата и доступ — без менеджера.",
+    "Автосервис гибридов: клиент записывается в один клик, без звонков.",
+    "Торт собирают в конструкторе — и заказ сразу уходит кондитеру в WhatsApp.",
+    "Новогодний магазин: подбор подарка, корзина, промокоды. Уходить не хочется.",
+    "Видите — люди снимают на телефоны. Сайт магазина, который хочется досмотреть до конца."
+  ],
+  final: "Хотите, я буду так же отвечать вашим клиентам? Нажмите на меня — покажу."
+};
+let sayT;
+function say(text, wave){
+  clearTimeout(sayT);
+  if (!text){ bub.classList.remove("on"); return; }
+  bub.classList.remove("on");
+  sayT = setTimeout(() => { $("bubT").textContent = text; bub.classList.add("on"); ARM.talk(Math.min(2600, 600 + text.length*30)); }, 250);
+}
+/* ---------- карточка работы ---------- */
+const modal = $("modal");
+function openW(i){
+  if (busy) return;
+  const w = WORKS[i];
+  $("mI").src = w.img; $("mI").alt = w.t; $("mK").textContent = w.k; $("mT").textContent = w.t; $("mD").textContent = w.d;
+  $("mG").innerHTML = w.g.map(x => `<span>${x}</span>`).join(""); $("mA").href = w.u;
+  modal.classList.add("open"); $("mX").focus();
+}
+function closeW(){ modal.classList.remove("open"); }
+$("mX").addEventListener("click", closeW);
+modal.addEventListener("click", e => { if (e.target === modal) closeW(); });
+
+/* ---------- чат с Профи: сначала бот на кнопках, потом ИИ-агент (демо, заготовленные ответы) ---------- */
+let chatOpen = false, chatStarted = false;
+const chat = $("chat"), chatM = $("chatM");
+const A = {
+  price: "Ориентиры:\n• лендинг — от 7 500 ₽\n• чат-бот на кнопках — от 15 000 ₽\n• сайт + чат-бот — от 25 000 ₽\n• интернет-магазин — от 26 000 ₽\n• ИИ-агент — от 45 000 ₽, с сайтом — от 55 000 ₽\nТочную цену Роман назовёт после короткого разговора.",
+  how: "Как идёт работа:\n1. Короткий разговор о задаче.\n2. Бесплатный макет первого экрана.\n3. Нравится — договор с ИП и разработка.\n4. Запуск и помощь после.",
+  diff: "Бот на кнопках ведёт клиента по готовым вариантам — как вы только что видели. ИИ-агент понимает обычную речь, сам считает цену и записывает — как живой администратор, только без выходных.",
+  time: "Зависит от задачи — Роман скажет точно после разговора. А макет первого экрана покажет бесплатно, ещё до оплаты.",
+  hi: "Здравствуйте! Спросите что угодно — про цены, сроки, как устроен агент.",
+  works: "Работы — на щитах бульвара: у каждого можно нажать «Смотреть».",
+  human: "Конечно. Роман лично отвечает в Telegram — вот кнопка ниже.",
+  fallback: "Хороший вопрос! Это демо, и тут я отвечаю заготовками. Настоящий агент ответил бы по вашим данным. Хотите — Роман расскажет подробнее."
+};
+function intent(t){
+  t = t.toLowerCase();
+  if (/цен|стои|сколько|прайс|₽|руб|бюджет|дорог|дешев/.test(t)) return "price";
+  if (/срок|когда|быстр|долго|дней|недел/.test(t)) return "time";
+  if (/отлич|разниц|бот|агент|нейро|ии\b|ai/.test(t)) return "diff";
+  if (/как.*(работ|проход|этап)|этап|процесс|договор/.test(t)) return "how";
+  if (/пример|работ|портфол|кейс/.test(t)) return "works";
+  if (/челов|роман|позвон|связ|менеджер|написать/.test(t)) return "human";
+  if (/привет|здравств|добр/.test(t)) return "hi";
+  return "fallback";
+}
+function addMsg(text, who){ const d = document.createElement("div"); d.className = "msg " + who; d.textContent = text; chatM.appendChild(d); chatM.scrollTop = chatM.scrollHeight; return d; }
+function addKb(btns){ const d = document.createElement("div"); d.className = "kb"; btns.forEach(([label, fn, href]) => { const b = document.createElement(href ? "a" : "button"); b.textContent = label; if (href){ b.href = href; b.target = "_blank"; b.rel = "noopener"; } else b.onclick = () => { [...d.querySelectorAll("button")].forEach(x => x.disabled = true); fn(label); }; d.appendChild(b); }); chatM.appendChild(d); chatM.scrollTop = chatM.scrollHeight; }
+function robotSays(text, then, delay){
+  const ty = document.createElement("div"); ty.className = "typing"; ty.innerHTML = "<i></i><i></i><i></i>"; chatM.appendChild(ty); chatM.scrollTop = chatM.scrollHeight;
+  setTimeout(() => { ty.remove(); addMsg(text, "r"); then && then(); }, delay ?? Math.min(1600, 500 + text.length*6));
+}
+const tg = ["Написать Роману", null, "https://t.me/managerparaev1"];
+function botMode(){
+  addMsg("Режим 1 · бот на кнопках", "sys");
+  robotSays("Сначала покажу, как работает обычный чат-бот. Выберите кнопку:", () => addKb([
+    ["Цены", l => { addMsg(l, "u"); robotSays(A.price, agentMode); }],
+    ["Как проходит работа", l => { addMsg(l, "u"); robotSays(A.how, agentMode); }],
+    ["Записаться на бесплатный макет", l => { addMsg(l, "u"); robotSays("В настоящем боте здесь клиент сразу выбрал бы время. А на макет — напишите Роману:", () => { addKb([tg]); agentMode(); }); }]
+  ]), 700);
+}
+let agentOn = false;
+function agentMode(){
+  if (agentOn) return; agentOn = true;
+  setTimeout(() => {
+    addMsg("Режим 2 · ИИ-агент", "sys");
+    robotSays("Так умеет бот — только по кнопкам. А ИИ-агент понимает обычную речь. Напишите как другу, например: «сколько стоит сайт для барбершопа?»", () => { $("chatI").focus({preventScroll:true}); });
+  }, 500);
+}
+function openChat(){
+  if (busy) return;
+  chatOpen = true; chat.classList.add("open"); say("");
+  if (!chatStarted){ chatStarted = true; addMsg("демо: ответы заготовлены", "sys"); botMode(); }
+}
+function closeChat(){ if (!chatOpen) return; chatOpen = false; chat.classList.remove("open"); ui(); }
+$("chatF").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("chatI").value.trim(); if (!v) return;
+  $("chatI").value = ""; addMsg(v, "u");
+  const k = intent(v);
+  if (!agentOn){ agentOn = true; }
+  robotSays(A[k], () => { if (k === "human" || k === "fallback" || k === "price") addKb([tg]); });
+});
+bot.addEventListener("click", openChat);
+$("askBot").addEventListener("click", () => { if (locked) return; openChat(); });
+$("chatX").addEventListener("click", closeChat);
+
+ui(); load(vA, IDLE(0), true); ready(vA).then(() => vA.play().catch(() => {})); preloadFly();
+</script>
+</body>
+</html>
