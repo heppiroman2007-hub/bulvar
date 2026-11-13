@@ -306,10 +306,15 @@ const WORKS = [
   {img:"img/jeepshop.jpg", k:"Тюнинг внедорожников · Иркутск", t:"«Джипshop 4×4» — маршрут до Байкала вместо каталога",
    d:"Первый экран — ролик, по которому едут выноски с товарами; дальше каталог по точкам маршрута до Байкала.", g:["видео-первый экран","каталог","корзина"], u:"https://paraevprofit.ru/demo/jeepshop/"}
 ];
+// порядок щитов вдоль бульвара (как в build_bulvar.py SEQ): остановки на 0, 2, 4, 6; нечётные видно на пролёте;
+// дальше щит «Здесь может быть ваш сайт» и финал — сайт студии
+const ORDER = ["vashdesert", "tort", "govoryu", "elka", "hybrid", "jeepshop", "rozy"];
+const wkey = w => w.img.slice(4, -4);
+WORKS.sort((a, b) => ORDER.indexOf(wkey(a)) - ORDER.indexOf(wkey(b)));
 
-/* ---------- видео-бульвар: у каждого щита пауза (камера стоит, люди живые), свайп — пролёт к следующему щиту ----------
-   {D}_idle_{i}.mp4 — пауза у щита с сайтом i (по кругу); {D}_fly_{i}.mp4 — пролёт: первый щит с сайтом i, следующий — i+1.
-   Последняя остановка — щит с сайтом студии. D = m (телефон 9:16) или pc (16:9). ?m=phone / ?m=pc — принудительно. */
+/* ---------- видео-бульвар: у щита пауза (камера стоит, люди живые), свайп — пролёт к следующей остановке ----------
+   {D}_idle_{k}.mp4 — пауза на остановке k (по кругу); {D}_fly_{k}.mp4 — пролёт от остановки k к k+1 мимо среднего щита
+   (на каждом щите свой сайт). Последняя остановка — щит с сайтом студии. D = m (телефон 9:16) или pc (16:9). ?m=phone / ?m=pc — принудительно. */
 const FORCE = new URLSearchParams(location.search).get("m");
 const MQ = matchMedia("(max-aspect-ratio: 1/1)");
 const MOB = FORCE ? FORCE === "phone" : MQ.matches;
@@ -317,8 +322,9 @@ if (!FORCE) MQ.addEventListener("change", () => location.reload());   // окн�
 const D = MOB ? "m" : "pc";
 const IDLE = i => `vid/${D}_idle_${i}.mp4`, FLY = i => `vid/${D}_fly_${i}.mp4`;
 document.documentElement.style.setProperty("--poster", `url(${IDLE(0).replace(".mp4", ".jpg")})`);
-const RATE = 1.15;
-const STOPS = [...WORKS.map((w, i) => ({sign:i, intro:i === 0})), {final:true}];
+const RATE = 1;          // пролёт с родной скоростью (2x Роману — «резко, тошнит»)
+const FLY_START = 0;
+const STOPS = [{sign:0, intro:true}, {sign:2}, {sign:4}, {sign:6}, {final:true}];
 const vA = $("vA"), vB = $("vB"), pin = $("pin");
 let act = vA, idle = vB, si = 0, busy = false, busyLine = "";
 const intro = $("intro"), capt = $("capt"), fin = $("final"), nextB = $("next"), dots = $("dots");
@@ -332,7 +338,10 @@ function seek(v, t){ return new Promise(res => {
     v.addEventListener("seeked", () => res(), {once:true}); v.currentTime = T; };
   if (v.readyState >= 1) go(); else v.addEventListener("loadedmetadata", go, {once:true});
 }); }
-function ready(v){ return new Promise(res => v.readyState >= 2 ? res() : v.addEventListener("loadeddata", () => res(), {once:true})); }
+// ждём кадр; если ролик не грузится (ошибка/сеть) — не зависаем, идём дальше
+function ready(v){ return new Promise(res => { if (v.readyState >= 2) return res();
+  const done = () => res(); v.addEventListener("loadeddata", done, {once:true}); v.addEventListener("error", done, {once:true}); setTimeout(done, 8000); }); }
+const ok = v => !v.error && isFinite(v.duration) && v.readyState >= 1;
 function swap(){ act.classList.remove("on"); idle.classList.add("on"); [act, idle] = [idle, act]; }
 // следим за видео и по кадрам, и по timeupdate (rAF может спать в фоне)
 function watch(v, fn){ let done = false;
@@ -342,23 +351,24 @@ function watch(v, fn){ let done = false;
   (function raf(){ if (done) return; if (fn()) { stop(); return; } requestAnimationFrame(raf); })();
 }
 // наплыв на другой ролик: новый начинает играть с начала, старый гасим после перехода
-async function crossTo(src, loop, rate){
-  const nx = idle; load(nx, src, loop); await ready(nx); await seek(nx, 0);
+async function crossTo(src, loop, rate, start = 0){
+  const nx = idle; load(nx, src, loop); await ready(nx); if (!ok(nx)) return false; await seek(nx, start);
   nx.playbackRate = rate; nx.play().catch(() => {}); swap();
   const old = idle; setTimeout(() => { if (old !== act) old.pause(); }, 320);
+  return true;
 }
 // пауза у щита k — зацикленный ролик, люди шевелятся
 const showIdle = k => crossTo(IDLE(k), true, 1);
 // пролёт от щита k к следующему; под конец — наплыв в паузу следующего щита
 function fly(k){ return new Promise(async res => {
-  await crossTo(FLY(k), false, RATE);
+  if (!await crossTo(FLY(k), false, RATE, FLY_START)){ await showIdle(k + 1); return res(); }   // пролёт не загрузился — сразу к следующему щиту
   const v = act; let nxReady = false, faded = false;
-  setTimeout(() => { const nx = idle; load(nx, IDLE(k + 1), true); ready(nx).then(() => seek(nx, 0)).then(() => nxReady = true); }, 360);
+  setTimeout(() => { const nx = idle; load(nx, IDLE(k + 1), true); ready(nx).then(() => ok(nx) && seek(nx, 0)).then(() => nxReady = true); }, 360);
   watch(v, () => {
     const left = v.duration - v.currentTime;
-    if (left < 0.45 && !nxReady && !v.paused) v.pause();               // пауза следующего щита ещё не загрузилась — держим кадр
-    if (left < 0.45 && nxReady && v.paused && !v.ended) v.play().catch(() => {});
-    if (!faded && nxReady && left < 0.42){ faded = true; idle.playbackRate = 1; idle.play().catch(() => {}); swap(); }
+    if (left < 0.75 && !nxReady && !v.paused) v.pause();               // пауза следующего щита ещё не загрузилась — держим кадр
+    if (left < 0.75 && nxReady && v.paused && !v.ended) v.play().catch(() => {});
+    if (!faded && nxReady && left < 0.7){ faded = true; idle.playbackRate = 1; idle.play().catch(() => {}); swap(); }
     if (faded && (left < 0.06 || v.ended)){ v.pause(); res(); return true; }
   });
 }); }
@@ -383,7 +393,7 @@ function ui(){
   else if (si === 0 || last){ ARM.set("wave"); ARM.t = setTimeout(() => ARM.set(last ? "point" : "idle"), 1800); }
   else ARM.set("point");
   if (busy) say(busyLine);
-  else say(si === 0 ? LINES.intro : last ? LINES.final : LINES.sign[st.sign]);
+  else say(si === 0 ? LINES.intro : last ? LINES.final : LINES.sign[wkey(WORKS[st.sign])]);
 }
 async function goTo(to){
   if (busy || modal.classList.contains("open") || chatOpen) return;
@@ -474,15 +484,12 @@ const ARM = (() => {
 
 const LINES = {
   intro: "Привет, я Профи — ИИ-агент. Проведу по улице. Свайп вверх — идём. Нажмёте на меня — поболтаем.",
-  sign: [
-    "Ресторан на 300 мест: меню листается как книга, а стол бронируют прямо с сайта.",
-    "Здесь клиент сам собирает торт и сразу видит цену. А я, кстати, могу отвечать вашим клиентам.",
-    "Курс, который продаёт себя сам: пробный день, оплата и доступ — без менеджера.",
-    "Автосервис гибридов: клиент записывается в один клик, без звонков.",
-    "Торт собирают в конструкторе — и заказ сразу уходит кондитеру в WhatsApp.",
-    "Новогодний магазин: подбор подарка, корзина, промокоды. Уходить не хочется.",
-    "Видите — люди снимают на телефоны. Сайт магазина, который хочется досмотреть до конца."
-  ],
+  sign: {   // по ключу работы; на остановке вспоминаем щит, который пролетели
+    vashdesert: "Здесь клиент сам собирает торт и сразу видит цену. А я, кстати, могу отвечать вашим клиентам.",
+    govoryu: "Пролетели Студию «Торт» — там торт собирают в конструкторе. А это курс, который продаёт себя сам.",
+    hybrid: "Мимо — новогодний магазин «ЁлкаТех». А тут автосервис: запись в один клик, без звонков.",
+    rozy: "Видели «Джипshop»? Дорога до Байкала вместо каталога. А здесь ресторан: меню листается как книга."
+  },
   final: "Хотите, я буду так же отвечать вашим клиентам? Нажмите на меня — покажу."
 };
 let sayT;
