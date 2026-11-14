@@ -39,8 +39,8 @@ a{color:inherit}
 .btn--ghost{background:#ffffff14;color:var(--text);border:1px solid #ffffff2e}
 
 /* ===== сцена ===== */
-.city{position:relative;height:100svh;touch-action:none}
-.pin{position:relative;height:100svh;overflow:hidden;perspective:var(--P);perspective-origin:50% 50%;
+.city{position:relative;height:var(--hh,100svh);touch-action:none}
+.pin{position:relative;height:var(--hh,100svh);overflow:hidden;perspective:var(--P);perspective-origin:50% 50%;
   background:
    radial-gradient(1.5px 1.5px at 12% 18%,#fff9 50%,transparent),radial-gradient(1px 1px at 33% 9%,#fff8 50%,transparent),
    radial-gradient(1.2px 1.2px at 71% 14%,#fffa 50%,transparent),radial-gradient(1px 1px at 86% 26%,#fff7 50%,transparent),
@@ -109,7 +109,7 @@ a{color:inherit}
 /* модалка */
 .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:#05060ae6;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal.open{opacity:1;pointer-events:auto}
-.mcard{position:relative;width:min(100%,760px);max-height:calc(100svh - 32px);overflow:auto;border-radius:22px;background:#12100d;border:1px solid #ffffff1f;
+.mcard{position:relative;width:min(100%,760px);max-height:calc(var(--hh,100svh) - 32px);overflow:auto;border-radius:22px;background:#12100d;border:1px solid #ffffff1f;
   transform:scale(.94) translateY(10px);transition:transform .3s}
 .modal.open .mcard{transform:none}
 /* карточка работы — «Афиша»: скрин на всю карточку, медленный наезд, LED-строка внизу */
@@ -646,6 +646,10 @@ a{color:inherit}
 </div>
 
 <script>
+let HH = innerHeight, HW = innerWidth;
+document.documentElement.style.setProperty("--hh", HH + "px");
+addEventListener("resize", () => { if (Math.abs(innerWidth - HW) < 2) return; HW = innerWidth; HH = innerHeight;
+  document.documentElement.style.setProperty("--hh", HH + "px"); });
 const $ = id => document.getElementById(id);
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // порядок = колонка работ на главной + Джипshop; последний щит бульвара — сайт студии (финал)
@@ -699,7 +703,7 @@ const intro = $("intro"), capt = $("capt"), fin = $("final"), nextB = $("next"),
 // заголовок — сразу под щитом первой остановки: ролик cover + object-position 50% 20%, низ щита в кадре ролика
 function placeIntro(){
   const vw = MOB ? 1080 : 1920, vh = MOB ? 1920 : 1080, boardBottom = MOB ? 753 / 1920 : 607 / 1080;
-  const W = innerWidth, H = innerHeight, s = Math.max(W / vw, H / vh), dh = vh * s, off = (H - dh) * 0.20;
+  const W = innerWidth, H = HH, s = Math.max(W / vw, H / vh), dh = vh * s, off = (H - dh) * 0.20;
   const y = off + boardBottom * dh + (MOB ? 14 : 18);
   intro.style.setProperty("--introTop", Math.min(y, H - 330) + "px");
 }
