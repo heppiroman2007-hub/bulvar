@@ -86,6 +86,11 @@ a{color:inherit}
 .intro h1{font:800 clamp(30px,8.4vw,66px)/1.02 var(--disp);letter-spacing:-.025em;margin-top:8px;text-shadow:0 2px 24px #000,0 0 50px #000}
 .intro h1 .nw{animation-play-state:running}
 .intro p{color:#d8d0c2;margin-top:10px;font-size:15px;text-shadow:0 1px 10px #000}
+.intro .offer{margin-top:14px;font:500 clamp(15px,4.1vw,19px)/1.4 Onest,sans-serif;color:#efe8db}
+.intro .offer b{font-weight:700;color:var(--warm)}
+/* реплика робота на телефоне перекрывала «свайп — дальше» — пока робот говорит, подсказку прячем */
+.capt__n{transition:opacity .3s}
+@media (max-width:899px){.pin:has(.bub.on) .capt__n{opacity:0}}
 .next{position:absolute;left:50%;bottom:22px;translate:-50% 0;z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;color:#fff;cursor:pointer;
   font:600 11px var(--mono);letter-spacing:2px;transition:opacity .3s}
 .next i{width:44px;height:44px;border-radius:50%;border:1px solid #ffffff55;display:grid;place-items:center;font-style:normal;font-size:18px;background:#05060a88;animation:bob 1.6s ease-in-out infinite}
@@ -304,6 +309,7 @@ a{color:inherit}
 .drum__cyl{position:absolute;left:50%;top:22px;width:var(--fw);height:var(--fh);margin-left:calc(var(--fw) / -2);transform-style:preserve-3d}
 .face{position:absolute;inset:0;display:flex;flex-direction:column;padding:22px 22px 20px;border-radius:22px;color:#2a2117;backface-visibility:hidden;-webkit-backface-visibility:hidden;
   background:linear-gradient(#f7f0e3,#ebdfc8);box-shadow:inset 0 0 0 1px #ffffff80,0 20px 50px -18px #000c}
+.face::after{content:"";position:absolute;inset:0;border-radius:inherit;background:#05060a;opacity:var(--dim,0);pointer-events:none}
 .face::before{content:"";position:absolute;left:16%;right:16%;top:-1px;height:4px;border-radius:0 0 4px 4px;background:#ffe6b0;box-shadow:0 0 16px 3px #ffcf7a99}
 .face__top{display:flex;justify-content:space-between;align-items:flex-start}
 .face__ic{width:68px;height:68px;object-fit:contain;filter:drop-shadow(0 8px 12px #0003)}
@@ -522,6 +528,7 @@ a{color:inherit}
     
     <div class="intro" id="intro">
       <h1><span class="ln"><span>Мои сайты</span></span><span class="ln"><span><span class="nw">смотрят на улице</span></span></span></h1>
+      <p class="offer">Сайты, онлайн-запись и боты для бизнеса<br><b>от 10 000 ₽</b> · макет бесплатно</p>
     </div>
     <div class="dots" id="dots"></div>
     <button class="next" id="next" aria-label="Дальше"><i>↓</i><span>СВАЙП ВВЕРХ</span></button>
@@ -1063,7 +1070,9 @@ ui(); load(vA, IDLE(0), true); ready(vA).then(() => vA.play().catch(() => {})); 
     cyl.style.transform = `translateZ(${-R}px) rotateY(${ang}deg)`;
     const fi = front();
     faces.forEach((f, i) => { let rel = ((i * STEP + ang) % 360 + 540) % 360 - 180;
-      const k = Math.cos(rel * Math.PI / 180); f.style.filter = `brightness(${(.45 + .55 * Math.max(0, k)).toFixed(3)})`;
+      // затемнение — накладкой, не filter: в Safari filter ломает backface-visibility и задние грани видны зеркально
+      const k = Math.cos(rel * Math.PI / 180); f.style.setProperty("--dim", (.55 * (1 - Math.max(0, k))).toFixed(3));
+      f.style.visibility = Math.abs(rel) > 92 ? "hidden" : "";
       f.classList.toggle("front", i === fi && Math.abs(rel) < 12); });
     if (drumIn && !seenF.has(fi)){ seenF.add(fi); countSeen(); }
     ticks.forEach((t, i) => { t.classList.toggle("on", i === fi); t.classList.toggle("seen", seenF.has(i)); });
@@ -1265,7 +1274,7 @@ async function update(){
   $("rOut").textContent = out;
   const mix = [...BASE[b0].mix, ...(help ? HELP[help].mix : [])];
   $("rMix").innerHTML = mix.map((m, i) => `<span style="animation-delay:${i * .05}s">${m}</span>`).join("");
-  if (price){ $("tagF").style.display = ""; $("tagR").style.display = ""; $("tagP").textContent = fmt(price); cta.textContent = `Хочу «${name}» →`; }
+  if (price){ $("tagF").style.display = ""; $("tagR").style.display = ""; $("tagP").textContent = fmt(price); cta.textContent = "Хочу такой →"; }
   else { $("tagF").style.display = "none"; $("tagR").style.display = "none"; $("tagP").textContent = "?"; $("rOut").textContent = out + " Цену назову за 15 минут разговора."; cta.textContent = "Посчитать мой вариант →"; }
   cta.style.display = ""; markCards(k);
   await garnish(my); if (my !== tok) return;
