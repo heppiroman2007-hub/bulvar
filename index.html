@@ -123,17 +123,20 @@ a{color:inherit}
 .modal.open .af__img img{animation:kb 14s ease-in-out infinite alternate}
 @keyframes kb{to{transform:scale(1.12) translate(-2%,2%)}}
 .af__img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 22%,#05060ae0 58%,#05060a 80%)}
-.af__txt{position:absolute;left:0;right:0;bottom:46px;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.af__txt{position:absolute;left:0;right:0;bottom:24px;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
 .af h3{font:800 clamp(28px,7vw,48px)/1 var(--disp);letter-spacing:-.03em;text-shadow:0 2px 20px #000}
-.af h3 em{display:block;margin-top:8px;font:italic 600 clamp(18px,4.4vw,26px)/1.15 var(--acc);color:var(--warm);letter-spacing:0}
-.af__act{display:flex;align-items:center;gap:16px}
+.af h3 em{display:block;margin-top:10px;font:400 clamp(15px,3.8vw,18px)/1.4 Onest,sans-serif;font-style:normal;color:#cfc7b9;letter-spacing:0}
+.af__act{display:flex;align-items:center;gap:18px}
+.af__act .btn{white-space:nowrap}
 .af__link{font:600 15px Onest,sans-serif;color:#e8dcc4;text-decoration:none;border-bottom:1px solid #ffcf7a66;padding-bottom:2px}
+.af__tick[hidden]{display:none!important}
 .af__tick{position:absolute;left:0;right:0;bottom:0;height:40px;overflow:hidden;background:#0b0a08;border-top:1px solid #ffcf7a33;display:flex;align-items:center}
 .af__tick div{display:flex;width:max-content;will-change:transform;transform:translate3d(0,0,0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .af__tick span{font:700 20px var(--led);letter-spacing:2px;color:#ffd88f;white-space:nowrap;padding-right:30px;text-transform:uppercase}
 .af__tick span::after{content:"✦";margin-left:30px;color:#ffcf7a99}
 @media (max-width:560px){.af__img{aspect-ratio:1.49}.af__img::after{background:linear-gradient(180deg,transparent 70%,#05060a)}
-  .af__txt{position:static;padding:4px 18px 18px;background:#05060a}.af h3{text-shadow:none}.af__act{width:100%}.af__act .btn{flex:1}
+  .af__txt{position:static;padding:6px 18px 20px;background:#05060a}.af h3{text-shadow:none;font-size:26px}
+  .af__act{width:100%;flex-direction:column;gap:14px}.af__act .btn{width:100%}
   .af__tick{position:static}}
 @media (prefers-reduced-motion:reduce){.modal.open .af__img img{animation:none}}
 .x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid #ffffff33;background:#05060acc;color:#fff;font-size:20px;cursor:pointer;z-index:2}
@@ -647,8 +650,8 @@ a{color:inherit}
     <button class="x" id="mX" aria-label="Закрыть">×</button>
     <div class="af__img"><img id="mI" alt=""></div>
     <div class="af__txt"><h3 id="mT"></h3>
-      <div class="af__act"><a class="btn" id="mA" target="_blank" rel="noopener">Открыть сайт ↗</a><a class="af__link" id="mWant" href="#end">Хочу такой же → цены</a></div></div>
-    <div class="af__tick"><div id="mG"></div></div>
+      <div class="af__act"><a class="btn" id="mA" target="_blank" rel="noopener">Открыть сайт <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="af__link" id="mWant" href="#end">Хочу такой же → цены</a></div></div>
+    <div class="af__tick" hidden><div id="mG"></div></div>
   </div>
 </div>
 
@@ -949,7 +952,7 @@ let tickRaf = 0;
 function tickStart(){
   tickStop(); const el = $("mG"); let x = 0, last = performance.now(), half = 0;
   el.style.transform = "translate3d(0,0,0)";
-  if (RM) return;
+  if (RM || el.parentNode.hidden) return;   // строка скрыта — цикл не крутим
   (function step(now){ const dt = Math.min(.25, (now - last) / 1000); last = now;   // скорость по реальному времени, даже если кадры редкие
     if (!half) half = el.scrollWidth / 2;
     x -= 55 * dt; if (half && -x >= half) x += half;
