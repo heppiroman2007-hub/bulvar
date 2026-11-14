@@ -125,14 +125,13 @@ a{color:inherit}
 .af__act{display:flex;align-items:center;gap:16px}
 .af__link{font:600 15px Onest,sans-serif;color:#e8dcc4;text-decoration:none;border-bottom:1px solid #ffcf7a66;padding-bottom:2px}
 .af__tick{position:absolute;left:0;right:0;bottom:0;height:40px;overflow:hidden;background:#0b0a08;border-top:1px solid #ffcf7a33;display:flex;align-items:center}
-.af__tick div{display:flex;width:max-content;animation:afTick 22s linear infinite}
-.af__tick span{font:700 20px var(--led);letter-spacing:2px;color:#ffd88f;text-shadow:0 0 8px #ffb35c88;white-space:nowrap;padding-right:30px;text-transform:uppercase}
+.af__tick div{display:flex;width:max-content;will-change:transform;transform:translate3d(0,0,0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.af__tick span{font:700 20px var(--led);letter-spacing:2px;color:#ffd88f;white-space:nowrap;padding-right:30px;text-transform:uppercase}
 .af__tick span::after{content:"✦";margin-left:30px;color:#ffcf7a99}
-@keyframes afTick{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media (max-width:560px){.af__img{aspect-ratio:1.49}.af__img::after{background:linear-gradient(180deg,transparent 70%,#05060a)}
   .af__txt{position:static;padding:4px 18px 18px;background:#05060a}.af h3{text-shadow:none}.af__act{width:100%}.af__act .btn{flex:1}
   .af__tick{position:static}}
-@media (prefers-reduced-motion:reduce){.modal.open .af__img img,.af__tick div{animation:none}}
+@media (prefers-reduced-motion:reduce){.modal.open .af__img img{animation:none}}
 .x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid #ffffff33;background:#05060acc;color:#fff;font-size:20px;cursor:pointer;z-index:2}
 
 .end{padding:90px 18px 110px;text-align:center;min-height:70vh}
@@ -924,9 +923,23 @@ function openW(i){
   { const [nm, tl] = w.t.split(" — "); $("mT").innerHTML = nm + (tl ? `<em>${tl}</em>` : ""); }
   { const tk = [w.k, ...w.g]; $("mG").innerHTML = [...tk, ...tk].map(x => `<span>${x}</span>`).join(""); }
   $("mA").href = w.u;
-  modal.classList.add("open"); $("mX").focus();
+  modal.classList.add("open"); $("mX").focus(); tickStart();
 }
-function closeW(){ modal.classList.remove("open"); }
+function closeW(){ modal.classList.remove("open"); tickStop(); }
+let tickRaf = 0;
+function tickStart(){
+  tickStop(); const el = $("mG"); let x = 0, last = performance.now(), half = 0;
+  el.style.transform = "translate3d(0,0,0)";
+  if (RM) return;
+  (function step(now){ const dt = Math.min(.25, (now - last) / 1000); last = now;   // скорость по реальному времени, даже если кадры редкие
+    if (!half) half = el.scrollWidth / 2;
+    x -= 55 * dt; if (half && -x >= half) x += half;
+    el.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`;
+    tickRaf = requestAnimationFrame(step); })(last);
+}
+function tickStop(){ cancelAnimationFrame(tickRaf); tickRaf = 0; }
+// LED-шрифт грузим сразу, а не в момент открытия карточки (иначе строка появляется с задержкой)
+if (document.fonts && document.fonts.load){ ["700 20px Led", "700 20px Unb", "italic 600 20px PfI"].forEach(s => document.fonts.load(s, "РОЗЫ 0123").catch(() => {})); }
 $("mX").addEventListener("click", closeW);
 modal.addEventListener("click", e => { if (e.target === modal) closeW(); });
 
