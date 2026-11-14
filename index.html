@@ -128,8 +128,10 @@ a{color:inherit}
 .af__tick div{display:flex;width:max-content;animation:afTick 22s linear infinite}
 .af__tick span{font:700 20px var(--led);letter-spacing:2px;color:#ffd88f;text-shadow:0 0 8px #ffb35c88;white-space:nowrap;padding-right:30px;text-transform:uppercase}
 .af__tick span::after{content:"✦";margin-left:30px;color:#ffcf7a99}
-@keyframes afTick{to{transform:translateX(-50%)}}
-@media (max-width:560px){.af__img{aspect-ratio:3/4}.af__txt{bottom:52px}.af__act{width:100%}.af__act .btn{flex:1}}
+@keyframes afTick{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@media (max-width:560px){.af__img{aspect-ratio:1.49}.af__img::after{background:linear-gradient(180deg,transparent 70%,#05060a)}
+  .af__txt{position:static;padding:4px 18px 18px;background:#05060a}.af h3{text-shadow:none}.af__act{width:100%}.af__act .btn{flex:1}
+  .af__tick{position:static}}
 @media (prefers-reduced-motion:reduce){.modal.open .af__img img,.af__tick div{animation:none}}
 .x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid #ffffff33;background:#05060acc;color:#fff;font-size:20px;cursor:pointer;z-index:2}
 
@@ -443,9 +445,11 @@ a{color:inherit}
 .bar .cd .what{margin-top:6px;font:600 11px var(--mono);letter-spacing:1px;color:#a89c8e;text-transform:uppercase}
 .bar .own{display:inline-block;margin-top:12px;font:600 13px Onest,sans-serif;color:#d8cfc2;padding:7px 12px;border-radius:999px;border:1px dashed #ffffff33;background:#ffffff08}
 .bar .own b{font:700 17px Led,monospace;color:#ffe6b0;margin-left:2px}
-.bar .also{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:820px;margin:10px auto 0}
-.bar .also button{font:600 13.5px Onest,sans-serif;padding:9px 14px;border-radius:999px;border:1px solid #ffffff2a;background:#121014cc;cursor:pointer}
-.bar .also button b{font:700 17px Led,monospace;color:#ffe6b0;margin-left:6px}
+.bar button{color:var(--text);-webkit-tap-highlight-color:transparent}
+.bar .also{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:820px;margin:12px auto 0}
+@media (min-width:760px){.bar .also{grid-template-columns:repeat(4,1fr)}}
+.bar .also button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;font:600 13.5px/1.2 Onest,sans-serif;padding:12px 14px;border-radius:16px;border:1px solid #ffffff22;background:#121014cc;cursor:pointer}
+.bar .also button b{font:700 20px Led,monospace;color:#ffe6b0;margin-left:0}
 .bar .foot{max-width:820px;margin:16px auto 0;text-align:center;font:600 10.5px var(--mono);letter-spacing:1.4px;color:#a89c8e;text-transform:uppercase;line-height:1.7}
 @media (prefers-reduced-motion:reduce){.bar .palm,.bar .sea i,.bar .neon.flick,.bar .tag.on,.bar .mix span{animation:none}}
 
@@ -785,6 +789,7 @@ function ui(){
   else if (si === 0 || last){ ARM.set("wave"); ARM.t = setTimeout(() => ARM.set(last ? "point" : "idle"), 1800); }
   else ARM.set("point");
   if (busy) say(busyLine);
+  else if (MOB && si === 0) say("");
   else say(si === 0 ? LINES.intro : last ? LINES.final : st.yours ? LINES.yours : LINES.sign[wkey(WORKS[st.sign])]);
 }
 async function goTo(to){
@@ -903,7 +908,8 @@ function say(text, wave){
   clearTimeout(sayT);
   if (!text){ bub.classList.remove("on"); return; }
   bub.classList.remove("on");
-  sayT = setTimeout(() => { $("bubT").textContent = text; bub.classList.add("on"); ARM.talk(Math.min(2600, 600 + text.length*30)); }, 250);
+  sayT = setTimeout(() => { $("bubT").textContent = text; bub.classList.add("on"); ARM.talk(Math.min(2600, 600 + text.length*30));
+    if (MOB) sayT = setTimeout(() => bub.classList.remove("on"), 5000 + text.length * 25); }, 250);
 }
 /* ---------- карточка работы ---------- */
 const modal = $("modal");
@@ -1020,14 +1026,15 @@ ui(); load(vA, IDLE(0), true); ready(vA).then(() => vA.play().catch(() => {})); 
     faces.forEach((f, i) => { let rel = ((i * STEP + ang) % 360 + 540) % 360 - 180;
       const k = Math.cos(rel * Math.PI / 180); f.style.filter = `brightness(${(.45 + .55 * Math.max(0, k)).toFixed(3)})`;
       f.classList.toggle("front", i === fi && Math.abs(rel) < 12); });
+    if (drumIn && !seenF.has(fi)){ seenF.add(fi); countSeen(); }
     ticks.forEach((t, i) => { t.classList.toggle("on", i === fi); t.classList.toggle("seen", seenF.has(i)); });
   }
-  function settle(){                          // грань встала ровно — засчитываем
-    const fi = front(); if (!drumIn) return; seenF.add(fi);
+  function countSeen(){
     $("drH").textContent = seenF.size < N ? `Покрутите барабан · ${seenF.size} из ${N}` : "Все шесть — в договоре";
     $("sealSt").textContent = seenF.size < N ? `Посмотрели ${seenF.size} из ${N} — подпишу, когда увидите все` : "Подписано";
     if (seenF.size === N && !signed){ signed = true; seal.classList.add("signed"); }
   }
+  function settle(){ if (!drumIn) return; seenF.add(front()); countSeen(); }
   let anim = 0;
   function tick(){
     const d = target - ang;
