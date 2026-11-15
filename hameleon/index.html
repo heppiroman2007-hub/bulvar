@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Paraev Profit — ИИ-администратор</title>
+<meta name="description" content="ИИ-агент, который отвечает клиентам 24/7 и присылает заявки в Telegram.">
+<link rel="preload" as="font" type="font/woff2" href="unbounded-cyrillic.woff2" crossorigin>
+<style>
+@font-face{font-family:Unb;src:url(unbounded-cyrillic.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0400-04FF}
+@font-face{font-family:Unb;src:url(unbounded-latin.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:Tek;src:url(tektur-cyrillic.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0400-04FF}
+@font-face{font-family:Tek;src:url(tektur-latin.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0000-00FF,U+2000-206F}
+@font-face{font-family:Golos;src:url(golos-cyrillic.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0400-04FF}
+@font-face{font-family:Golos;src:url(golos-latin.woff2) format("woff2");font-weight:400 900;font-display:swap;unicode-range:U+0000-00FF,U+2000-206F}
+:root{
+  --bg:#05070c;--text:#f5f7fb;--soft:#c9d1dd;--muted:#8a95a7;
+  --a1:#5b9dff;--a2:#a78bfa;--glass:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);
+  --h:100vh;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:Golos,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+.hero{position:relative;height:var(--h);min-height:560px;overflow:hidden;isolation:isolate;
+  background:var(--bg) url(v2_human_pc1600.webp) center/cover no-repeat}
+@media (max-aspect-ratio:4/5){.hero{background-image:url(v2_human_m.webp);background-position:center top}}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .6s ease;z-index:0;touch-action:pan-y}
+#gl.on{opacity:1}
+.shade{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(5,7,12,.86) 0%,rgba(5,7,12,.55) 34%,rgba(5,7,12,0) 56%),
+             linear-gradient(0deg,rgba(5,7,12,.7) 0%,rgba(5,7,12,0) 26%)}
+
+/* шапка */
+.top{position:absolute;z-index:3;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;
+  padding:max(18px,env(safe-area-inset-top)) clamp(16px,4vw,56px) 0}
+.logo{font:700 15px/1 Tek,sans-serif;letter-spacing:3px;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.logo i{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));box-shadow:0 0 14px var(--a1)}
+.pill{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 18px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  font:500 14px/1 Golos,sans-serif;transition:background .2s}
+.pill:hover{background:rgba(255,255,255,.12)}
+.pill svg{width:17px;height:17px}
+
+/* текст */
+.copy{position:absolute;z-index:3;left:clamp(16px,6vw,96px);top:50%;transform:translateY(-46%);width:min(560px,44vw)}
+.eyebrow{font:600 12px/1 Tek,sans-serif;letter-spacing:3px;text-transform:uppercase;color:var(--soft);
+  display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.eyebrow b{width:26px;height:1px;background:linear-gradient(90deg,var(--a1),var(--a2))}
+h1{font:800 clamp(34px,4.3vw,66px)/1.02 Unb,sans-serif;letter-spacing:-.035em}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin-top:22px;font-size:clamp(16px,1.25vw,19px);line-height:1.5;color:var(--soft);max-width:470px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 28px;border-radius:999px;
+  font:600 16px/1 Golos,sans-serif;transition:transform .2s,box-shadow .2s,background .2s}
+.btn.main{background:linear-gradient(90deg,var(--a1),var(--a2));color:#fff;box-shadow:0 10px 34px rgba(91,157,255,.35)}
+.btn.main:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(167,139,250,.45)}
+.btn.ghost{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.btn.ghost:hover{background:rgba(255,255,255,.12)}
+
+/* бирка «человек / ИИ-агент» у фигуры */
+.tag{position:absolute;z-index:2;left:0;top:0;pointer-events:none;display:flex;align-items:center;gap:10px;
+  height:36px;padding:0 14px 0 12px;border-radius:999px;background:rgba(8,11,19,.55);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font:600 12px/1 Tek,sans-serif;letter-spacing:2px;text-transform:uppercase;
+  opacity:0;transition:opacity .5s;will-change:transform}
+.tag.on{opacity:1}
+.tag .dot{width:8px;height:8px;border-radius:50%;background:#e9d8c4;box-shadow:0 0 10px #e9d8c4;transition:background .3s,box-shadow .3s}
+.tag.ai .dot{background:#6fd3ff;box-shadow:0 0 12px #6fd3ff}
+.tag .w{position:relative;display:inline-block;min-width:78px}
+.tag .w span{transition:opacity .25s}
+.tag .w span+span{position:absolute;left:0;top:0;opacity:0}
+.tag.ai .w span:first-child{opacity:0}.tag.ai .w span+span{opacity:1}
+
+/* подсказка */
+.hint{position:absolute;z-index:3;left:50%;bottom:max(26px,env(safe-area-inset-bottom));transform:translateX(-50%);
+  display:flex;align-items:center;gap:10px;font:500 13px/1 Golos,sans-serif;color:var(--soft);white-space:nowrap;
+  padding:11px 16px;border-radius:999px;background:rgba(8,11,19,.45);border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .6s}
+.hint svg{width:18px;height:18px;flex:none;color:var(--a1)}
+.hint.gone{opacity:0}
+.only-touch{display:none}
+
+/* телефон: фигура сверху, текст снизу */
+@media (max-aspect-ratio:4/5){
+  .shade{background:linear-gradient(0deg,rgba(5,7,12,.97) 0%,rgba(5,7,12,.9) 30%,rgba(5,7,12,.35) 50%,rgba(5,7,12,0) 62%),
+                    linear-gradient(180deg,rgba(5,7,12,.55) 0%,rgba(5,7,12,0) 14%)}
+  .copy{left:16px;right:16px;width:auto;top:auto;bottom:max(20px,env(safe-area-inset-bottom));transform:none}
+  .eyebrow{margin-bottom:14px;font-size:11px;letter-spacing:2.4px}
+  h1{font-size:clamp(28px,8.4vw,40px)}
+  .sub{margin-top:12px;font-size:15px}
+  .cta{margin-top:20px;gap:10px}
+  .btn{height:52px;padding:0 22px;font-size:15px;flex:1 1 auto}
+  .pill span{display:none}.pill{width:42px;padding:0;justify-content:center}
+  .hint{bottom:auto;top:calc(var(--h) * .47)}
+}
+@media (hover:none){.only-mouse{display:none}.only-touch{display:inline}}
+@media (prefers-reduced-motion:reduce){#gl{transition:none}}
+</style>
+</head>
+<body>
+<section class="hero" id="hero">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="shade"></div>
+
+  <header class="top">
+    <a class="logo" href="https://paraevprofit.ru/"><i></i>Paraev Profit</a>
+    <a class="pill" href="https://t.me/managerparaev1" target="_blank" rel="noopener" aria-label="Написать в Telegram">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6 0 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.6 3.4c.7.5 1.7.1 1.9-.7L23 5.9c.2-1-.6-1.8-1.5-1.4Z"/><path d="m7.4 15.1 11-7.6-8.3 9.4"/></svg>
+      <span>Написать</span>
+    </a>
+  </header>
+
+  <div class="tag" id="tag"><span class="dot"></span><span class="w"><span>Человек</span><span>ИИ-агент</span></span></div>
+
+  <div class="copy">
+    <p class="eyebrow"><b></b>ИИ-агент для бизнеса</p>
+    <h1>Администратор, который <em>не&nbsp;уходит домой</em></h1>
+    <p class="sub">Отвечает клиентам днём и ночью, записывает и присылает заявки вам в Telegram. Снаружи — как живой сотрудник.</p>
+    <div class="cta">
+      <a class="btn main" href="https://t.me/managerparaev1" target="_blank" rel="noopener">Хочу такого сотрудника →</a>
+      <a class="btn ghost" href="https://paraevprofit.ru/ai-agent/">Как он работает</a>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">
+    <svg class="only-mouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 7v3"/></svg>
+    <svg class="only-touch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V12m0-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-4.6-2.2L4.2 15a1.5 1.5 0 0 1 2.3-1.9L9 15"/></svg>
+    <span class="only-mouse">Наведите курсор на администратора</span>
+    <span class="only-touch">Коснитесь — и увидите, кто вам отвечает</span>
+  </div>
+</section>
+
+<script>
+(() => {
+  const hero = document.getElementById('hero'), cv = document.getElementById('gl');
+  const tag = document.getElementById('tag'), hint = document.getElementById('hint');
+  const root = document.documentElement;
+
+  // Высота первого экрана в px (iPhone: адресная строка не дёргает картинку)
+  let lastW = 0;
+  const setH = () => { if (innerWidth !== lastW) { lastW = innerWidth; root.style.setProperty('--h', innerHeight + 'px'); } };
+  setH(); addEventListener('resize', setH);
+
+  const touch = matchMedia('(hover: none)').matches;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const phone = () => innerWidth / innerHeight < 0.8;
+
+  const gl = cv.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: false, powerPreference: 'high-performance' });
+  if (!gl) return; // остаётся статичная картинка-фон
+
+  // ---------- шейдеры ----------
+  const vs = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+  const fs = `precision mediump float;
+  uniform sampler2D uH,uR,uM;uniform vec2 uRes,uImg,uFocus,uPlace;uniform float uT,uZoom;
+  vec2 mapUv(vec2 px){
+    float k=max(uRes.x/uImg.x,uRes.y/uImg.y)*uZoom;
+    vec2 off=vec2(uPlace.x*uRes.x-uFocus.x*uImg.x*k,(uRes.y-uImg.y*k)*uPlace.y);
+    vec2 uv=(px-off)/(uImg*k);
+    if(uv.x<0.)uv.x=-uv.x; if(uv.x>1.)uv.x=2.-uv.x;
+    return clamp(uv,0.001,.999);
+  }
+  float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+  float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+    return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}
+  void main(){
+    vec2 px=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);
+    vec2 s=px/uRes;
+    vec2 uv=mapUv(px);
+    float sc=900./uRes.y;
+    float n=vn(px*sc*.012+vec2(0.,uT*.25))*.65+vn(px*sc*.035-vec2(uT*.3,0.))*.35;
+    float m=texture2D(uM,s).r;
+    float a=smoothstep(.28,.62,m+(n-.5)*.42);
+    float e=1.-abs(a*2.-1.); e=e*e*e;
+    vec2 sh=vec2(e*.004,0.);
+    vec3 hc=texture2D(uH,uv).rgb;
+    vec3 rc=vec3(texture2D(uR,uv+sh).r,texture2D(uR,uv).g,texture2D(uR,uv-sh).b);
+    rc*=1.-.035*a*step(.5,fract(px.y*sc/3.));
+    vec3 c=mix(hc,rc,a);
+    vec3 glow=mix(vec3(.36,.62,1.),vec3(.66,.55,.98),s.y);
+    c+=glow*e*.6;
+    gl_FragColor=vec4(c,1.);
+  }`;
+  const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s); return s; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(pr); gl.useProgram(pr);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = n => gl.getUniformLocation(pr, n);
+  const u = { H: U('uH'), R: U('uR'), M: U('uM'), res: U('uRes'), img: U('uImg'), focus: U('uFocus'), place: U('uPlace'), t: U('uT'), zoom: U('uZoom') };
+
+  const tex = unit => { const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; };
+  const tH = tex(0), tR = tex(1), tM = tex(2);
+  gl.uniform1i(u.H, 0); gl.uniform1i(u.R, 1); gl.uniform1i(u.M, 2);
+
+  // ---------- маска (маленький 2D-холст) ----------
+  const mk = document.createElement('canvas'), mx = mk.getContext('2d', { willReadFrequently: true });
+  let MW = 1, MH = 1;
+
+  // ---------- картинки ----------
+  let set = null, imgW = 1, imgH = 1, focus = [.618, .25], place = [.5, .5], ready = false;
+  const load = src => new Promise((ok, no) => { const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = no; i.src = src; });
+  async function pickSet() {
+    const p = phone();
+    const want = p ? 'm' : (innerWidth * Math.min(devicePixelRatio, 2) > 1800 ? 'pc2560' : 'pc1600');
+    if (want === set) return; set = want;
+    const [h, r] = await Promise.all([load(`v2_human_${want}.webp`), load(`v2_robot_${want}.webp`)]);
+    if (set !== want) return;
+    for (const [t, i, n] of [[tH, h, 0], [tR, r, 1]]) { gl.activeTexture(gl.TEXTURE0 + n); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, i); }
+    imgW = h.naturalWidth; imgH = h.naturalHeight;
+    focus = p ? [.5, .25] : [.618, .25];
+    ready = true; cv.classList.add('on'); tag.classList.add('on');
+  }
+
+  // ---------- размеры ----------
+  let W = 1, H = 1, dpr = 1, zoom = 1;
+  function resize() {
+    const r = hero.getBoundingClientRect(); W = r.width; H = r.height;
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    if (W * H * dpr * dpr > 3.2e6) dpr = Math.sqrt(3.2e6 / (W * H));
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    gl.viewport(0, 0, cv.width, cv.height);
+    MW = 200; MH = Math.max(2, Math.round(200 * H / W));
+    mk.width = MW; mk.height = MH; mx.fillStyle = '#000'; mx.fillRect(0, 0, MW, MH);
+    place = phone() ? [.5, 1] : [W / H > 1.9 ? .68 : .66, .32];
+    zoom = phone() ? 1.07 : 1;
+    pickSet();
+  }
+  addEventListener('resize', () => { clearTimeout(resize.t); resize.t = setTimeout(resize, 120); });
+  resize();
+
+  // точка на экране (css px) для координат исходной картинки (0..1)
+  function imgToScreen(ix, iy) {
+    const k = Math.max(W / imgW, H / imgH) * zoom;
+    const ox = place[0] * W - focus[0] * imgW * k, oy = (H - imgH * k) * place[1];
+    return [ox + ix * imgW * k, oy + iy * imgH * k, k * imgH];
+  }
+
+  // ---------- рисование в маску ----------
+  function stamp(x, y, r, a) { // css px
+    const sx = x / W * MW, sy = y / H * MH, sr = r / W * MW;
+    const g = mx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(.55, `rgba(255,255,255,${a * .7})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    mx.fillStyle = g; mx.beginPath(); mx.arc(sx, sy, sr, 0, 6.2832); mx.fill();
+  }
+  function fade(k) { mx.globalCompositeOperation = 'source-over'; mx.fillStyle = `rgba(0,0,0,${k})`; mx.fillRect(0, 0, MW, MH); }
+
+  // ---------- ПК: курсор с инерцией ----------
+  const ptr = { x: 0, y: 0, tx: 0, ty: 0, px: 0, py: 0, inside: false, last: -1e9, moved: false };
+  hero.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    const r = hero.getBoundingClientRect(); ptr.tx = e.clientX - r.left; ptr.ty = e.clientY - r.top;
+    if (!ptr.inside) { ptr.inside = true; if (!ptr.moved) { ptr.x = ptr.px = ptr.tx; ptr.y = ptr.py = ptr.ty; } }
+    ptr.last = performance.now(); ptr.moved = true; hideHint();
+  });
+  hero.addEventListener('pointerleave', () => { ptr.inside = false; });
+
+  // ---------- телефон: сам перетекает + реакция на тап ----------
+  const wave = { phase: 'human', t0: 0, c: 0, ox: 0, oy: 0, from: 0 };
+  const DUR = reduce ? { human: 2600, in: 2200, robot: 3200, out: 2000 } : { human: 1700, in: 1400, robot: 2300, out: 1200 };
+  const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  function faceXY() { const [x, y] = imgToScreen(focus[0], focus[1]); return [x, y]; }
+  function startWave(ph, x, y, now) {
+    wave.from = wave.c; wave.phase = ph; wave.t0 = now;
+    if (x != null) { wave.ox = x; wave.oy = y; } else if (ph === 'in') { [wave.ox, wave.oy] = faceXY(); }
+  }
+  if (touch) hero.addEventListener('pointerdown', e => {
+    if (e.target.closest('a')) return;
+    const r = hero.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, now = performance.now();
+    if (wave.phase === 'human' || wave.phase === 'out') startWave('in', x, y, now); else startWave('out', x, y, now);
+    hideHint();
+  });
+  function stepWave(now) {
+    const d = DUR[wave.phase], t = Math.min(1, (now - wave.t0) / d);
+    if (wave.phase === 'in') wave.c = wave.from + (1 - wave.from) * ease(t);
+    else if (wave.phase === 'out') wave.c = wave.from * (1 - ease(t));
+    if (t >= 1) {
+      const next = { human: 'in', in: 'robot', robot: 'out', out: 'human' }[wave.phase];
+      startWave(next, null, null, now);
+    }
+    mx.globalCompositeOperation = 'source-over'; mx.fillStyle = '#000'; mx.fillRect(0, 0, MW, MH);
+    if (wave.c > 0.002) {
+      const R = Math.hypot(W, H) * 1.25 * wave.c;
+      const sx = wave.ox / W * MW, sy = wave.oy / H * MH, sr = Math.max(.5, R / W * MW);
+      const g = mx.createRadialGradient(sx, sy, sr * .55, sx, sy, sr);
+      g.addColorStop(0, '#fff'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      mx.fillStyle = g; mx.fillRect(0, 0, MW, MH);
+    }
+    return wave.c;
+  }
+
+  // ---------- подсказка ----------
+  let hintOff = false;
+  function hideHint() { if (hintOff) return; hintOff = true; setTimeout(() => hint.classList.add('gone'), touch ? 600 : 1800); }
+  setTimeout(() => { if (!hintOff && touch) hint.classList.add('gone'); }, 9000);
+
+  // ---------- кадр ----------
+  let run = true, t0 = performance.now(), prev = t0, frame = 0, ai = 0, raf = 0;
+  const kick = () => { if (!raf && run && !document.hidden) { prev = performance.now(); raf = requestAnimationFrame(loop); } };
+  new IntersectionObserver(es => { run = es[0].isIntersecting; kick(); }).observe(hero);
+  document.addEventListener('visibilitychange', kick);
+  window.__ham = ptr;
+
+  function loop(now) {
+    raf = 0;
+    if (!run || document.hidden) return;
+    const dt = Math.min(50, now - prev); prev = now; frame++;
+    const f = dt / 16.67;
+
+    if (touch) {
+      ai = stepWave(now);
+    } else {
+      // автопилот, пока курсора нет (подсказка, что картинку можно «трогать»)
+      const idle = now - ptr.last > 4500;
+      if (idle && !reduce && now - t0 > 900) {
+        const [fx, fy, ih] = imgToScreen(focus[0], .3), tt = (now - t0) / 1000;
+        ptr.tx = fx + Math.sin(tt * .9) * ih * .10; ptr.ty = fy + Math.sin(tt * 1.3) * ih * .16;
+        if (!ptr.moved && frame < 3) { ptr.x = ptr.px = ptr.tx; ptr.y = ptr.py = ptr.ty; }
+      }
+      const k = 1 - Math.pow(1 - .14, f);
+      ptr.x += (ptr.tx - ptr.x) * k; ptr.y += (ptr.ty - ptr.y) * k;
+      fade(1 - Math.pow(1 - .045, f));
+      mx.globalCompositeOperation = 'lighter';
+      const sp = Math.hypot(ptr.x - ptr.px, ptr.y - ptr.py);
+      const base = Math.min(W, H) * (idle ? .17 : .19), R = base * (1 + Math.min(.35, sp / 90));
+      if (ptr.inside || idle) {
+        const steps = Math.max(1, Math.ceil(sp / (R * .25)));
+        for (let i = 1; i <= steps; i++) {
+          const q = i / steps; stamp(ptr.px + (ptr.x - ptr.px) * q, ptr.py + (ptr.y - ptr.py) * q, R, Math.min(.5, .3 * f));
+        }
+      }
+      ptr.px = ptr.x; ptr.py = ptr.y;
+      if (frame % 6 === 0) { // сколько «робота» на фигуре
+        const [x0, y0] = imgToScreen(focus[0] - .05, .07), [x1, y1] = imgToScreen(focus[0] + .05, .33);
+        const a = Math.max(0, x0 / W * MW | 0), b = Math.max(0, y0 / H * MH | 0);
+        const w = Math.max(1, Math.min(MW - a, (x1 - x0) / W * MW | 0)), h = Math.max(1, Math.min(MH - b, (y1 - y0) / H * MH | 0));
+        const d = mx.getImageData(a, b, w, h).data; let s = 0, c = 0;
+        for (let i = 0; i < d.length; i += 16) { s += d[i] > 120 ? 1 : 0; c++; }
+        ai = s / c;
+      }
+    }
+
+    // бирка у плеча
+    if (ready) {
+      const [tx, ty] = phone() ? imgToScreen(focus[0] - .27, .33) : imgToScreen(focus[0] + .09, .16);
+      tag.style.transform = `translate(${Math.round(Math.min(tx, W - 150))}px,${Math.round(ty)}px)`;
+      tag.classList.toggle('ai', ai > (touch ? .5 : .3));
+    }
+
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, tM);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, mk);
+    gl.uniform2f(u.res, cv.width, cv.height); gl.uniform2f(u.img, imgW, imgH);
+    gl.uniform2f(u.focus, focus[0], focus[1]); gl.uniform2f(u.place, place[0], place[1]);
+    gl.uniform1f(u.t, (now - t0) / 1000); gl.uniform1f(u.zoom, zoom);
+    if (ready) gl.drawArrays(gl.TRIANGLES, 0, 3);
+    raf = requestAnimationFrame(loop);
+  }
+  kick();
+})();
+</script>
+</body>
+</html>
